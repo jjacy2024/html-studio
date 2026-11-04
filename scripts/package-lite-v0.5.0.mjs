@@ -17,6 +17,7 @@ const files={};
 async function write(file,contents,mode=0o644){const b=Buffer.from(contents);await fs.writeFile(path.join(dir,file),b);await fs.chmod(path.join(dir,file),mode);files[file]={sha256:hash(b),bytes:b.length};}
 async function copy(file,source){await write(file,await fs.readFile(source));}
 await write(entry,html);await write('HTML Studio.html',editor);await write('connector/connector.cjs',connector);
+await copy('LICENSE.txt','LICENSE');
 await write('connector/start-ai.sh',await fs.readFile('launcher/lite/start-ai.sh'),0o755);
 // Windows PowerShell 5.1 requires a BOM to decode Chinese strings reliably.
 await write('connector/start-ai.ps1','\ufeff'+(await fs.readFile('launcher/lite/start-ai.ps1','utf8')).replace(/^\ufeff/,''));
@@ -26,9 +27,10 @@ const previous='licenses';
 for(const file of ['04-编辑器第三方许可.txt','05-字体许可.txt','06-连接器第三方许可.txt'])await copy(file,path.join(previous,file));
 await write('示例-图表编辑.html',chartHTML({slides:true}));
 await copy('编辑器回归报告.html','docs/通用编辑MCP-回归报告-v0.5.0.html');
-await write('先读我.txt',`html全能编辑器 v${version} · 轻量版（Mac / Windows 通用）\n\n完整解压，双击「${entry}」。\n手动编辑：直接打开，不需要 Node.js。\nAI 编辑：复制入口里的提示词给能操作本机的 Agent。已有 Node.js 24+ 则复用，缺少时才从官网校验下载。\n本包没有 runtime、.app，也不需要管理员安装或修改系统 Node。\n首次下载需要联网；下载保存在用户目录，以后复用，不进入分享包。\n在新打开的编辑器中点「连接 AI」，完成客户端配置及当前工程授权。\n切换入口前先保存工程，浏览器草稿不自动同步。\nMac 备用入口：启用 AI 连接.command；Windows：启用 AI 连接.cmd。备用入口不自动下载缺少的环境。\n分享整个 ZIP 即可，详见「使用说明.html」。\n`);
+await write('先读我.txt',`html全能编辑器 v${version} · 轻量版（Mac / Windows 通用）\n\n免费个人非商业使用；未经作者书面授权，禁止商业使用。完整条款见 LICENSE.txt；第三方组件按原有许可证使用。\n\n完整解压，双击「${entry}」。\n手动编辑：直接打开，不需要 Node.js。\nAI 编辑：复制入口里的提示词给能操作本机的 Agent。已有 Node.js 24+ 则复用，缺少时才从官网校验下载。\n本包没有 runtime、.app，也不需要管理员安装或修改系统 Node。\n首次下载需要联网；下载保存在用户目录，以后复用，不进入分享包。\n在新打开的编辑器中点「连接 AI」，完成客户端配置及当前工程授权。\n切换入口前先保存工程，浏览器草稿不自动同步。\nMac 备用入口：启用 AI 连接.command；Windows：启用 AI 连接.cmd。备用入口不自动下载缺少的环境。\n分享整个 ZIP 即可，详见「使用说明.html」。\n`);
 const css='body{max-width:860px;margin:40px auto;padding:0 24px 60px;font:16px/1.8 system-ui,sans-serif;background:#faf9fe;color:#302b42}a{color:#6749bf}li{margin:10px 0}h2{margin-top:30px}.note{padding:16px;background:#eee9f8;border-radius:10px}code{overflow-wrap:anywhere}';
 await write('使用说明.html',`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>轻量版使用说明</title><style>${css}</style><h1>html全能编辑器 · 轻量版</h1><p>v${version} · Mac / Windows 共用 · 不含 Node.js 运行环境和 .app</p>
+<p class="note"><strong>免费个人非商业使用。</strong>未经作者书面授权，禁止用于企业经营、付费项目、收费服务或转售等商业用途。第三方组件仍遵循各自许可证。详见 <a href="LICENSE.txt">完整使用许可</a>。</p>
 <h2>直接编辑</h2><ol><li>完整解压，把整个文件夹放到固定位置。</li><li>双击「${entry}」，点击“打开编辑器”；也可直接打开「HTML Studio.html」。推荐 Chrome 或 Edge。</li><li>导入 HTML / .htmlstudio 工程，或从模板新建，进行编辑、预览与导出。</li></ol><p>手动编辑不需要 Node.js。模板中的可选字体及原文件外链资源仍可能需要联网。</p>
 <h2>首次使用 AI</h2><ol><li>入口中点击“复制 AI 启动提示词”，发给能操作本机的 Agent。</li><li>启动助手先检查已有 Node.js 24 或更高版本，再检查工具已下载的运行环境；都没有时，才从 nodejs.org 下载对应系统与芯片的 Node.js v24.22.2 并校验 SHA-256。启动时会显示进度。</li><li>在新打开的浏览器编辑器里导入工程，点击“连接 AI”，完成客户端配置与当前工程授权。启动连接器本身不等于 MCP 配置或授权已经完成。</li><li>回到 Agent 刷新工具列表或新建对话，先读取工程确认连接，再提出编辑请求。保留全部 31 项 MCP 工具。</li></ol>
 <p class="note">首次缺少运行环境时需要联网，下载约 38–55 MB。私有运行环境安装后占约 100–130 MB 本机磁盘，但不进入分享包。已有兼容 Node.js 时不会下载；手动编辑始终无需下载运行环境。</p>

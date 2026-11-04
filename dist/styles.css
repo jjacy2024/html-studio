@@ -1524,3 +1524,7 @@ dialog[data-kind="table-totals"] td { padding:9px; }
 .chart-structure-row input { width:150px; }
 .chart-structure-status { color:#857b92; font-size:11px; margin:8px 0 0; line-height:1.7; }
 .chart-structure-status[data-error] { color:#b13b44; }
+
+/* Personal noncommercial use notice, kept outside user documents. */
+.usage-license-text { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.8; margin: 0; }
+#usage-license-button { display: block; margin: 10px auto 0; font-size: 12px; color: var(--muted, #777); }

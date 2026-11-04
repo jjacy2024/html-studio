@@ -2633,6 +2633,7 @@ function mainMenu() {
     { label: "查看导出代码", disabled: editor.isHome, run: () => showSource() },
     { label: "模板字体与离线缓存…", run: () => editor.showFontLibrary() },
     { label: "使用说明与支持范围", run: () => showHelp() },
+    { label: "使用许可 · 免费自用，禁止商用", run: () => showUsageLicense() },
   ]);
 }
 function confirmNew() { editor.showTemplates(); }
@@ -2702,6 +2703,10 @@ async function showSource() {
       { label: "导出 HTML", primary: true, run: () => editor.exportHTML() },
     ],
   );
+}
+function showUsageLicense() {
+  modal("个人非商业使用许可", $("#usage-license-content").innerHTML,
+    [{ label: "关闭", primary: true, run: closeModal }]);
 }
 function showHelp() {
   modal(
@@ -2840,6 +2845,7 @@ $("#preview-details").onclick = async () => {
 };
 $("#source-button").onclick = showSource;
 $("#help-button").onclick = showHelp;
+$("#usage-license-button").onclick = showUsageLicense;
 $("#new-template-button").onclick = () => confirmNew();
 $("#dialog-close").onclick = closeModal;
 $("#dialog").addEventListener("click", (e) => {
