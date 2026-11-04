@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>html全能编辑器 · 内部操作接口 v1</title>
+<style>body{max-width:1000px;margin:40px auto;padding:0 24px 60px;font:16px/1.8 system-ui,sans-serif;color:#243044;background:#fafbfe}h1,h2{line-height:1.35}h2{margin-top:38px}a{color:#3256ca}table{width:100%;border-collapse:collapse;background:white}th,td{padding:10px;text-align:left;border:1px solid #dbe1ec;vertical-align:top}pre{padding:20px;background:#172033;color:#e2eaff;overflow:auto;border-radius:12px;font-size:13px;line-height:1.7}code{overflow-wrap:anywhere}.note{padding:16px;background:#eef2ff;border-left:4px solid #6376d5}</style>
+<h1>内部操作接口 v1</h1>
+<p>适用于编辑器 <strong>v0.3.17 / v0.4.0</strong>。第一阶段提供“读取页面与图表 → 修改数据 → 预览 → 保存副本”的操作链。现有按钮和工作流程继续可用。</p>
+<p class="note">这是编辑器页面内部的 JavaScript 接口。v0.4.0 已提供配套本地 MCP 连接器，见 <a href="MCP连接使用指南-v0.4.0.html">连接使用指南</a>。普通用户可通过原有界面或已配置的 Agent 编辑；开发者也可在编辑器主页面的控制台或同页集成代码中调用。</p>
+<p><a href="内部操作接口-v1.json">机器可读参数定义</a> · <a href="内部操作接口-回归报告-v0.3.17.html">本轮回归报告</a> · <a href="../HTML%20Studio.html">打开编辑器</a></p>
+<h2>入口与约定</h2>
+<pre>const api = window.htmlStudioAPI;
+api.version;       // '1.0'，接口版本，与编辑器版本区分
+api.getState();    // 当前文档、修订号、页面、预览及忙碌状态
+api.describe();    // 16 个命令的参数定义
+await api.execute({ command: 'pages.list' });</pre>
+<p>先通过原界面导入 HTML 或工程。请求及返回值都是可序列化的数据，不返回 DOM 对象，也不接受任意 JavaScript。入口对象只读。参数不符合定义、包含未知字段或命令时会返回错误。</p>
+<pre>// 成功
+{ ok: true, apiVersion: '1.0', context: { token, ... }, result: ... }
+// 失败；execute 正常返回错误对象，调用者需要检查 ok
+{ ok: false, apiVersion: '1.0', context: { token, ... },
+  error: { code: 'STALE_DOCUMENT', message: '...', details: ... } }</pre>
+<p>标注为“写”的命令必须传入上一次响应的 <code>context.token</code>，格式为 <code>{documentId, revision}</code>，以避免将旧操作应用到新文档。页面切换、预览及文件生成也采用此约定。重新导入、撤回或重做导致文档重建后，应重新读取目标及 token，不能沿用缓存的 DOM 或旧请求。元素 ID 来自编辑器的 <code>data-hs-id</code>，不以可变的页码和标题作为唯一定位依据。</p>
+<h2>命令清单</h2>
+<table><thead><tr><th>命令</th><th>类型</th><th>主要用途</th></tr></thead><tbody>
+<tr><td>document.read</td><td>读</td><td>工程名称、状态及当前上下文；空工作台也可读取。</td></tr>
+<tr><td>pages.list</td><td>读</td><td>页面 ID、序号、标题及当前页标记。</td></tr>
+<tr><td>pages.select</td><td>写</td><td>按 pageId 切换页面；先退出预览。</td></tr>
+<tr><td>elements.list</td><td>读</td><td>按 pageId、offset、limit 分页读取图层摘要，默认 100，最多 500 条。</td></tr>
+<tr><td>charts.list</td><td>读</td><td>指定页面的图表候选及表格。候选不等于可编辑，应再 charts.read 检测。</td></tr>
+<tr><td>charts.read</td><td>读</td><td>当前页目标的数据、绑定状态、能力及只读单元格；未绑定时返回 detectionId。</td></tr>
+<tr><td>charts.bind</td><td>写</td><td>传入 id、acceptDetected: true、detectionId，确认识别结果并保留原样绑定。</td></tr>
+<tr><td>charts.update</td><td>写</td><td>传入 id 和 cells，整批验证后修改单张图表或表格；一批对应一次撤回。</td></tr>
+<tr><td>charts.structure</td><td>写</td><td>按 axis: row/column、operation: add/delete/rename、index 操作分类或系列；可传 name。add 在指定索引后插入。</td></tr>
+<tr><td>history.undo / history.redo</td><td>写</td><td>共用编辑器历史；操作后使用新上下文。</td></tr>
+<tr><td>preview.start</td><td>写</td><td>预览当前页并等待实际可见内容就绪；默认 15 秒，timeoutMs 上限 20 秒。</td></tr>
+<tr><td>preview.status</td><td>读</td><td>预览是否开启及当前加载状态。</td></tr>
+<tr><td>preview.stop</td><td>写</td><td>退出预览，返回编辑状态。</td></tr>
+<tr><td>files.create</td><td>写</td><td>生成 project / html 内容、文件名及 MIME 类型，供调用者处理。</td></tr>
+<tr><td>files.download</td><td>写</td><td>通过浏览器下载副本，返回文件名及字节数；不覆盖原文件、不修改当前工程名。</td></tr>
+</tbody></table>
+<h2>图表数据与范围</h2>
+<p>图表行列索引从 <strong>0</strong> 开始，数值矩阵不包含分类名和系列名。表格则按整个网格索引，包含标题行与标题列。<code>charts.update</code> 格式为 <code>cells: [{row: 0, column: 0, value: 1200}]</code>。图表接受有限数值，表格还接受文本及既有引擎支持的公式，例如 <code>=SUM(B2:B4)</code>。表格读取结果中的 <code>raw</code> 保留原始文本/公式，<code>values</code> 为计算结果。</p>
+<table><tr><th>渲染方式</th><th>本版接口范围</th></tr>
+<tr><td>SVG</td><td>可识别的普通、分组、水平、堆叠柱状图，以及瀑布图、气泡图。气泡的 X/Y/面积为固定三列，瀑布图为固定数值列；自动合计不能直接修改。</td></tr>
+<tr><td>HTML/CSS</td><td>可识别的单系列柱子、占比条；支持增删分类，数值列固定。</td></tr>
+<tr><td>Chart.js 3/4</td><td>bar、line、radar、pie、doughnut、polarArea，通过隔离副本读取和计算，再应用结果。</td></tr>
+<tr><td>编辑器内置图表</td><td>柱状、折线、饼图；已绑定表格的图表应修改源表格。</td></tr>
+<tr><td>HTML 表格</td><td>支持单元格、基础公式、已识别合计及热力配色联动。API 暂不开放表格行列结构操作，原界面的行列功能仍可使用。</td></tr></table>
+<p>以 <code>charts.read</code> 返回的 <code>capabilities</code>、<code>readonly</code>、<code>limits</code> 和后续校验结果为准。接口复用现有识别规则，不能把任意图片、未知 Canvas 或任意网页脚本自动转换成可编辑图表；不支持的目标明确返回错误。未绑定的图表先读取，再由调用者核对目标、数值和识别结果，最后显式绑定。</p>
+<p><code>detectionId</code> 有效期为 5 分钟，与具体目标、文档修订和识别数据关联，最多缓存 64 项。若脚本在读取与绑定之间生成不同数据，会返回 <code>DETECTION_CHANGED</code>，要求重新读取核对。接口不会自动接受变化后的数据。</p>
+<h2>完整调用示例</h2>
+<p>以下在编辑器主页面执行。先读取并核对页面和图表，再运行修改步骤；示例会把所选图表第一行第一列改成 1200。</p>
+<pre>const api = window.htmlStudioAPI;
+const check = r =&gt; {
+  if (!r.ok) throw Error(r.error.code + ': ' + r.error.message);
+  return r;
+};
+const pages = check(await api.execute({command: 'pages.list'}));
+console.table(pages.result); // 根据返回列表选择目标页
+const targetPage = pages.result.find(p =&gt; p.active) || pages.result[0];
+check(await api.execute({
+  command: 'pages.select', params: {pageId: targetPage.id},
+  expected: pages.context.token
+}));
+const list = check(await api.execute({command: 'charts.list'}));
+console.table(list.result); // 核对后将目标 ID 填入下一行
+const chartId = '替换为目标图表 ID';
+let read = check(await api.execute({
+  command: 'charts.read', params: {id: chartId}
+}));
+console.log(read.result); // 核对数据及能力，确认后再执行下面的写操作
+
+if (!read.result.bound) {
+  read = check(await api.execute({
+    command: 'charts.bind',
+    params: {id: chartId, acceptDetected: true,
+             detectionId: read.result.detectionId},
+    expected: read.context.token
+  }));
+}
+const edited = check(await api.execute({
+  command: 'charts.update',
+  params: {id: chartId, cells: [{row: 0, column: 0, value: 1200}]},
+  expected: read.context.token
+}));
+const preview = check(await api.execute({
+  command: 'preview.start', expected: edited.context.token
+}));
+// 检查预览；之后退出并下载副本
+const stopped = check(await api.execute({
+  command: 'preview.stop', expected: preview.context.token
+}));
+check(await api.execute({
+  command: 'files.download',
+  params: {format: 'project', name: '报告-修改副本'},
+  expected: stopped.context.token
+}));</pre>
+<h2>错误恢复与保存</h2>
+<ul>
+<li><code>BUSY</code>：另一个接口请求未完成，请串行调用。</li>
+<li><code>UI_BUSY</code>：用户正在输入、拖动或使用弹窗，完成操作后重试。异步期间发生这类变化也会阻止回写。</li>
+<li><code>STALE_DOCUMENT</code>：文档或编辑状态已改变。重新读取、重新核对操作，不要仅换 token 后盲目重放。</li>
+<li><code>EXPECTED_REQUIRED / INVALID_ARGUMENT</code>：缺少版本令牌或参数不合法，请按 describe() 修正。</li>
+<li><code>BINDING_REQUIRED / DETECTION_REQUIRED / DETECTION_CHANGED</code>：重新读取并确认识别结果，再绑定。</li>
+<li><code>PAGE_NOT_ACTIVE / PREVIEW_ACTIVE</code>：切换目标页或退出预览后再编辑图表。</li>
+<li><code>LOCKED / READ_ONLY_CELL / LINKED_DATA</code>：检查锁定、自动合计和绑定的数据源；不要绕过保护。</li>
+<li><code>UNSUPPORTED / LIMIT_EXCEEDED</code>：该结构或数量暂不支持；保留原图，接口不会自动换样式。</li>
+<li><code>PREVIEW_NOT_READY</code>：等待超时不等于可见内容已就绪；可继续读取 preview.status 或主动退出。</li>
+<li><code>MISSING_FONTS</code>：默认保存不弹窗，返回缺失字体信息。补齐字体后重试，或明确传入 <code>missingFonts: 'online'</code> 允许在线字体回退，此时副本不保证完全离线。原界面保存仍保留原有提示。</li>
+</ul>
+<p>files.create 返回文件内容，不代表已写入磁盘；files.download 触发浏览器下载，实际落盘位置由浏览器决定。一次 charts.update 仅处理一张图表，整批先校验并共用撤回历史；本版没有跨多张图表的原子事务。</p>
+<h2>后续可扩展边界</h2>
+<p>本版未开放通用文字/样式写接口、页面复制删除排序接口、任意矢量编辑或自动导入接口。后续可在同一命令层逐步增加。v0.4.0 的连接器负责 MCP 传输、当前工程授权和会话管理。页面对象自身并不是网络服务。宿主可在 execute(request, {signal}) 中传入 AbortSignal，在异步图表写入前取消操作；已完成的同步步骤不会自动回滚。</p>
+</html>

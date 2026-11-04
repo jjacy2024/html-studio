@@ -1,0 +1,172 @@
+[
+  {
+    "id": "mdn-grid",
+    "title": "CSS Grid 多列",
+    "kind": "layout",
+    "url": "https://raw.githubusercontent.com/mdn/css-examples/65b08d2236b304d50d28a807a48c35f6889d902d/css-cookbook/columns-grid--download.html",
+    "source": "https://github.com/mdn/css-examples/blob/65b08d2236b304d50d28a807a48c35f6889d902d/css-cookbook/columns-grid--download.html",
+    "repo": "mdn/css-examples",
+    "revision": "65b08d2236b304d50d28a807a48c35f6889d902d",
+    "licenseUrl": "https://raw.githubusercontent.com/mdn/css-examples/65b08d2236b304d50d28a807a48c35f6889d902d/LICENSE"
+  },
+  {
+    "id": "mdn-flex",
+    "title": "Flexbox 自适应卡片",
+    "kind": "layout",
+    "url": "https://raw.githubusercontent.com/mdn/css-examples/65b08d2236b304d50d28a807a48c35f6889d902d/css-cookbook/columns-flexbox-wrapping--download.html",
+    "source": "https://github.com/mdn/css-examples/blob/65b08d2236b304d50d28a807a48c35f6889d902d/css-cookbook/columns-flexbox-wrapping--download.html",
+    "repo": "mdn/css-examples",
+    "revision": "65b08d2236b304d50d28a807a48c35f6889d902d",
+    "licenseUrl": "https://raw.githubusercontent.com/mdn/css-examples/65b08d2236b304d50d28a807a48c35f6889d902d/LICENSE"
+  },
+  {
+    "id": "mdn-multicol",
+    "title": "多栏文章",
+    "kind": "layout",
+    "url": "https://raw.githubusercontent.com/mdn/css-examples/65b08d2236b304d50d28a807a48c35f6889d902d/css-cookbook/columns-multicol--download.html",
+    "source": "https://github.com/mdn/css-examples/blob/65b08d2236b304d50d28a807a48c35f6889d902d/css-cookbook/columns-multicol--download.html",
+    "repo": "mdn/css-examples",
+    "revision": "65b08d2236b304d50d28a807a48c35f6889d902d",
+    "licenseUrl": "https://raw.githubusercontent.com/mdn/css-examples/65b08d2236b304d50d28a807a48c35f6889d902d/LICENSE"
+  },
+  {
+    "id": "mdn-animation",
+    "title": "CSS 雪花动画",
+    "kind": "css-animation",
+    "url": "https://raw.githubusercontent.com/mdn/css-examples/65b08d2236b304d50d28a807a48c35f6889d902d/modules/animation.html",
+    "source": "https://github.com/mdn/css-examples/blob/65b08d2236b304d50d28a807a48c35f6889d902d/modules/animation.html",
+    "repo": "mdn/css-examples",
+    "revision": "65b08d2236b304d50d28a807a48c35f6889d902d",
+    "licenseUrl": "https://raw.githubusercontent.com/mdn/css-examples/65b08d2236b304d50d28a807a48c35f6889d902d/LICENSE"
+  },
+  {
+    "id": "mdn-dialog",
+    "title": "原生对话框与表单",
+    "kind": "dialog",
+    "url": "https://raw.githubusercontent.com/mdn/dom-examples/03ae1ffb325a9202d3a64f26ab5b8361392a5368/htmldialogelement-basic/index.html",
+    "source": "https://github.com/mdn/dom-examples/blob/03ae1ffb325a9202d3a64f26ab5b8361392a5368/htmldialogelement-basic/index.html",
+    "repo": "mdn/dom-examples",
+    "revision": "03ae1ffb325a9202d3a64f26ab5b8361392a5368",
+    "licenseUrl": "https://raw.githubusercontent.com/mdn/dom-examples/03ae1ffb325a9202d3a64f26ab5b8361392a5368/LICENSE"
+  },
+  {
+    "id": "mdn-canvas",
+    "title": "Canvas 绘制与变换",
+    "kind": "canvas",
+    "url": "https://raw.githubusercontent.com/mdn/dom-examples/03ae1ffb325a9202d3a64f26ab5b8361392a5368/canvas/transforms/canvas-gettransform-settransform.html",
+    "source": "https://github.com/mdn/dom-examples/blob/03ae1ffb325a9202d3a64f26ab5b8361392a5368/canvas/transforms/canvas-gettransform-settransform.html",
+    "repo": "mdn/dom-examples",
+    "revision": "03ae1ffb325a9202d3a64f26ab5b8361392a5368",
+    "licenseUrl": "https://raw.githubusercontent.com/mdn/dom-examples/03ae1ffb325a9202d3a64f26ab5b8361392a5368/LICENSE"
+  },
+  {
+    "id": "mdn-svg",
+    "title": "响应式 SVG 图形",
+    "kind": "svg",
+    "url": "https://raw.githubusercontent.com/mdn/html-examples/57ad3ae9d04c0fab8e3fbf9bcb90d8e3af348e20/svg-dynamic-lengths/index.html",
+    "source": "https://github.com/mdn/html-examples/blob/57ad3ae9d04c0fab8e3fbf9bcb90d8e3af348e20/svg-dynamic-lengths/index.html",
+    "repo": "mdn/html-examples",
+    "revision": "57ad3ae9d04c0fab8e3fbf9bcb90d8e3af348e20",
+    "licenseUrl": "https://raw.githubusercontent.com/mdn/html-examples/57ad3ae9d04c0fab8e3fbf9bcb90d8e3af348e20/LICENSE"
+  },
+  {
+    "id": "mdn-select",
+    "title": "自定义 Select 控件",
+    "kind": "native-select",
+    "url": "https://raw.githubusercontent.com/mdn/html-examples/57ad3ae9d04c0fab8e3fbf9bcb90d8e3af348e20/custom-select/index.html",
+    "source": "https://github.com/mdn/html-examples/blob/57ad3ae9d04c0fab8e3fbf9bcb90d8e3af348e20/custom-select/index.html",
+    "repo": "mdn/html-examples",
+    "revision": "57ad3ae9d04c0fab8e3fbf9bcb90d8e3af348e20",
+    "licenseUrl": "https://raw.githubusercontent.com/mdn/html-examples/57ad3ae9d04c0fab8e3fbf9bcb90d8e3af348e20/LICENSE"
+  },
+  {
+    "id": "mdn-shadow",
+    "title": "Web Component / Shadow DOM",
+    "kind": "shadow",
+    "url": "https://raw.githubusercontent.com/mdn/web-components-examples/7e588e43bb8ed439716c413a3bd42466112155c8/element-details/index.html",
+    "source": "https://github.com/mdn/web-components-examples/blob/7e588e43bb8ed439716c413a3bd42466112155c8/element-details/index.html",
+    "repo": "mdn/web-components-examples",
+    "revision": "7e588e43bb8ed439716c413a3bd42466112155c8",
+    "licenseUrl": "https://raw.githubusercontent.com/mdn/web-components-examples/7e588e43bb8ed439716c413a3bd42466112155c8/LICENSE"
+  },
+  {
+    "id": "mdn-table",
+    "title": "行列合并数据表",
+    "kind": "table",
+    "url": "https://raw.githubusercontent.com/mdn/learning-area/21973263ba859ff3477919087b488157f9d618a6/html/tables/planets-data/index.html",
+    "source": "https://github.com/mdn/learning-area/blob/21973263ba859ff3477919087b488157f9d618a6/html/tables/planets-data/index.html",
+    "repo": "mdn/learning-area",
+    "revision": "21973263ba859ff3477919087b488157f9d618a6",
+    "licenseUrl": "https://raw.githubusercontent.com/mdn/learning-area/21973263ba859ff3477919087b488157f9d618a6/LICENSE"
+  },
+  {
+    "id": "email",
+    "title": "响应式 HTML 邮件",
+    "kind": "email",
+    "url": "https://raw.githubusercontent.com/leemunroe/responsive-html-email-template/60b5b6ddf9600e4b7d7e1ef60e5a3a8f1e56e186/email.html",
+    "source": "https://github.com/leemunroe/responsive-html-email-template/blob/60b5b6ddf9600e4b7d7e1ef60e5a3a8f1e56e186/email.html",
+    "repo": "leemunroe/responsive-html-email-template",
+    "revision": "60b5b6ddf9600e4b7d7e1ef60e5a3a8f1e56e186",
+    "licenseUrl": "https://raw.githubusercontent.com/leemunroe/responsive-html-email-template/60b5b6ddf9600e4b7d7e1ef60e5a3a8f1e56e186/license.txt"
+  },
+  {
+    "id": "reveal",
+    "title": "Reveal.js 嵌套幻灯片",
+    "kind": "slides",
+    "url": "https://raw.githubusercontent.com/hakimel/reveal.js/e240e175232fa2de660a02bc0d7bf5f655b159bb/demo.html",
+    "source": "https://github.com/hakimel/reveal.js/blob/e240e175232fa2de660a02bc0d7bf5f655b159bb/demo.html",
+    "repo": "hakimel/reveal.js",
+    "revision": "e240e175232fa2de660a02bc0d7bf5f655b159bb",
+    "licenseUrl": "https://raw.githubusercontent.com/hakimel/reveal.js/e240e175232fa2de660a02bc0d7bf5f655b159bb/LICENSE"
+  },
+  {
+    "id": "todo",
+    "title": "TodoMVC JavaScript 应用",
+    "kind": "dynamic-app",
+    "url": "https://raw.githubusercontent.com/tastejs/todomvc/ff43b02e59dfa604386bb382034b2cd07c2bcd8a/examples/javascript-es5/dist/index.html",
+    "source": "https://github.com/tastejs/todomvc/blob/ff43b02e59dfa604386bb382034b2cd07c2bcd8a/examples/javascript-es5/dist/index.html",
+    "repo": "tastejs/todomvc",
+    "revision": "ff43b02e59dfa604386bb382034b2cd07c2bcd8a",
+    "licenseUrl": "https://raw.githubusercontent.com/tastejs/todomvc/ff43b02e59dfa604386bb382034b2cd07c2bcd8a/license.md"
+  },
+  {
+    "id": "bootstrap-blog",
+    "title": "长篇博客",
+    "kind": "blog",
+    "url": "https://getbootstrap.com/docs/5.3/examples/blog/",
+    "source": "https://getbootstrap.com/docs/5.3/examples/blog/",
+    "licenseUrl": "https://raw.githubusercontent.com/twbs/bootstrap/main/LICENSE"
+  },
+  {
+    "id": "bootstrap-blog-rtl",
+    "title": "阿拉伯文 RTL 博客",
+    "kind": "blog-rtl",
+    "url": "https://getbootstrap.com/docs/5.3/examples/blog-rtl/",
+    "source": "https://getbootstrap.com/docs/5.3/examples/blog-rtl/",
+    "licenseUrl": "https://raw.githubusercontent.com/twbs/bootstrap/main/LICENSE"
+  },
+  {
+    "id": "bootstrap-checkout",
+    "title": "结算表单",
+    "kind": "checkout",
+    "url": "https://getbootstrap.com/docs/5.3/examples/checkout/",
+    "source": "https://getbootstrap.com/docs/5.3/examples/checkout/",
+    "licenseUrl": "https://raw.githubusercontent.com/twbs/bootstrap/main/LICENSE"
+  },
+  {
+    "id": "bootstrap-dashboard",
+    "title": "后台与数据图表",
+    "kind": "dashboard",
+    "url": "https://getbootstrap.com/docs/5.3/examples/dashboard/",
+    "source": "https://getbootstrap.com/docs/5.3/examples/dashboard/",
+    "licenseUrl": "https://raw.githubusercontent.com/twbs/bootstrap/main/LICENSE"
+  },
+  {
+    "id": "bootstrap-carousel",
+    "title": "轮播与产品页面",
+    "kind": "carousel",
+    "url": "https://getbootstrap.com/docs/5.3/examples/carousel/",
+    "source": "https://getbootstrap.com/docs/5.3/examples/carousel/",
+    "licenseUrl": "https://raw.githubusercontent.com/twbs/bootstrap/main/LICENSE"
+  }
+]

@@ -1,0 +1,1 @@
+body{margin:0;background:#fff;font-family:sans-serif}.card{display:flex;gap:20px;padding:40px;align-items:center}.card img{animation:turn 2s linear infinite}button{background:#7455e9;color:white;border:0;padding:14px 24px}@keyframes turn{to{transform:rotate(360deg)}}

@@ -1,0 +1,1161 @@
+{
+  "apiVersion": "1.0",
+  "indexBase": 0,
+  "expected": {
+    "type": "object",
+    "properties": {
+      "documentId": {
+        "type": "string",
+        "maxLength": 300
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100000
+      }
+    },
+    "required": [
+      "documentId",
+      "revision"
+    ],
+    "additionalProperties": false
+  },
+  "commands": {
+    "elements.read": {
+      "summary": "读取当前页元素详情、文字片段、计算样式与画布坐标；样式只作用于目标元素，SVG 填色/描边作用于其图形",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.select": {
+      "summary": "选中当前页图层，联动定位左侧列表",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.text": {
+      "summary": "批量修改文字。每项使用 text 或 runs 二选一；富文本多片段必须按 elements.read 返回的 runs.index 修改，保留标签样式。表格/图表数据使用 charts 工具",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "edits": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                },
+                "text": {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                "runs": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 300,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9999
+                      },
+                      "text": {
+                        "type": "string",
+                        "maxLength": 20000
+                      }
+                    },
+                    "required": [
+                      "index",
+                      "text"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "edits"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.style": {
+      "summary": "批量设置字体、颜色、填充、描边、阴影、透明度等。尺寸单位 px；opacity 为 0–100；rotate 为角度；background 支持无外链的简单渐变",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "styles": {
+            "type": "object",
+            "properties": {
+              "fontFamily": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "fontSize": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 1000
+              },
+              "fontWeight": {
+                "type": "string",
+                "enum": [
+                  "100",
+                  "200",
+                  "300",
+                  "400",
+                  "500",
+                  "600",
+                  "700",
+                  "800",
+                  "900",
+                  "normal",
+                  "bold"
+                ]
+              },
+              "fontStyle": {
+                "type": "string",
+                "enum": [
+                  "normal",
+                  "italic",
+                  "oblique"
+                ]
+              },
+              "color": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "lineHeight": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "letterSpacing": {
+                "type": "number",
+                "minimum": -100,
+                "maximum": 1000
+              },
+              "textAlign": {
+                "type": "string",
+                "enum": [
+                  "left",
+                  "center",
+                  "right",
+                  "justify",
+                  "start",
+                  "end"
+                ]
+              },
+              "textDecoration": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "underline",
+                  "line-through",
+                  "overline"
+                ]
+              },
+              "fill": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "background": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "stroke": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "strokeWidth": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "strokeStyle": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "solid",
+                  "dashed",
+                  "dotted",
+                  "double"
+                ]
+              },
+              "radius": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 24000
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "boxShadow": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "rotate": {
+                "type": "number",
+                "minimum": -36000,
+                "maximum": 36000
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "ids",
+          "styles"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.geometry": {
+      "summary": "批量设置位置和尺寸。x/y 为画布坐标，width/height 为局部边框尺寸 px。geometry:{fitContent:true} 将容器宽高贴合内容、移除四周空白和内边距、保留内部尺寸间距；不能与 x/y/width/height 混用。如返回 CONFIRMATION_REQUIRED，须先获用户同意再传 acceptLayoutChange:true。流式元素自由移动须先转换容器布局",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "geometry": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "minimum": -100000,
+                "maximum": 100000
+              },
+              "y": {
+                "type": "number",
+                "minimum": -100000,
+                "maximum": 100000
+              },
+              "width": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 24000
+              },
+              "height": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 24000
+              },
+              "fitContent": {
+                "type": "boolean"
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "acceptLayoutChange": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ids",
+          "geometry"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.layout": {
+      "summary": "设置 HTML 容器的 Flex/Grid/自由布局及间距内边距。转换 free 固定当前视口、改变响应式行为，必须先向用户说明并获同意后传 acceptLayoutChange:true",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "layout": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "flex",
+                  "grid",
+                  "free"
+                ]
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "row",
+                  "column",
+                  "row-reverse",
+                  "column-reverse"
+                ]
+              },
+              "gap": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "padding": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "align": {
+                "type": "string",
+                "enum": [
+                  "stretch",
+                  "flex-start",
+                  "center",
+                  "flex-end",
+                  "baseline"
+                ]
+              },
+              "justify": {
+                "type": "string",
+                "enum": [
+                  "flex-start",
+                  "center",
+                  "flex-end",
+                  "space-between",
+                  "space-around",
+                  "space-evenly"
+                ]
+              },
+              "wrap": {
+                "type": "string",
+                "enum": [
+                  "nowrap",
+                  "wrap",
+                  "wrap-reverse"
+                ]
+              },
+              "columns": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 24
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "acceptLayoutChange": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "layout"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.create": {
+      "summary": "在指定容器新建 text/frame/基础 SVG 形状。默认融入容器正常排版；position:absolute 时 x/y 是父容器局部坐标。只接受纯文字和白名单样式，不执行 HTML",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "parentId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "text",
+              "frame",
+              "rect",
+              "ellipse",
+              "line",
+              "triangle",
+              "star"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "position": {
+            "type": "string",
+            "enum": [
+              "flow",
+              "absolute"
+            ]
+          },
+          "x": {
+            "type": "number",
+            "minimum": -100000,
+            "maximum": 100000
+          },
+          "y": {
+            "type": "number",
+            "minimum": -100000,
+            "maximum": 100000
+          },
+          "width": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 24000
+          },
+          "height": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 24000
+          },
+          "styles": {
+            "type": "object",
+            "properties": {
+              "fontFamily": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "fontSize": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 1000
+              },
+              "fontWeight": {
+                "type": "string",
+                "enum": [
+                  "100",
+                  "200",
+                  "300",
+                  "400",
+                  "500",
+                  "600",
+                  "700",
+                  "800",
+                  "900",
+                  "normal",
+                  "bold"
+                ]
+              },
+              "fontStyle": {
+                "type": "string",
+                "enum": [
+                  "normal",
+                  "italic",
+                  "oblique"
+                ]
+              },
+              "color": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "lineHeight": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2000
+              },
+              "letterSpacing": {
+                "type": "number",
+                "minimum": -100,
+                "maximum": 1000
+              },
+              "textAlign": {
+                "type": "string",
+                "enum": [
+                  "left",
+                  "center",
+                  "right",
+                  "justify",
+                  "start",
+                  "end"
+                ]
+              },
+              "textDecoration": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "underline",
+                  "line-through",
+                  "overline"
+                ]
+              },
+              "fill": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "background": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "stroke": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "strokeWidth": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "strokeStyle": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "solid",
+                  "dashed",
+                  "dotted",
+                  "double"
+                ]
+              },
+              "radius": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 24000
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "boxShadow": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "rotate": {
+                "type": "number",
+                "minimum": -36000,
+                "maximum": 36000
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "parentId",
+          "kind"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.align": {
+      "summary": "对齐/均匀分布自由定位元素；单个元素相对父容器，多选相对合并范围；分布至少三个元素",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "alignment": {
+            "type": "string",
+            "enum": [
+              "left",
+              "center",
+              "right",
+              "top",
+              "middle",
+              "bottom",
+              "distributeX",
+              "distributeY"
+            ]
+          }
+        },
+        "required": [
+          "ids",
+          "alignment"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.duplicate": {
+      "summary": "复制图层并重映射 ID；Flex/Grid 内保持原有间距和排列",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.delete": {
+      "summary": "删除图层，支持一次撤回；不能删除整页或包含锁定子图层的容器",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.metadata": {
+      "summary": "批量重命名、锁定/解锁、显示/隐藏图层。hidden 使用 visibility，保留布局占位",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "hidden": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.reorder": {
+      "summary": "调整同父图层的前后顺序；流式容器内也会改变排版顺序",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "forward",
+              "backward",
+              "front",
+              "back"
+            ]
+          }
+        },
+        "required": [
+          "ids",
+          "order"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.group": {
+      "summary": "组合同父的自由定位元素并保留样式。流式元素须先由用户确认 elements.layout 转为 free，不会静默改变响应式布局",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.ungroup": {
+      "summary": "解绑组合/拆散 HTML 容器。若会改变响应式布局或丢失容器底色/描边/阴影/裁剪，返回 CONFIRMATION_REQUIRED；必须先向用户说明并获同意，再传 acceptLayoutChange:true",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "acceptLayoutChange": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "document.read": {
+      "summary": "读取当前工程状态",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "pages.list": {
+      "summary": "列出页面及稳定元素 ID",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "pages.select": {
+      "summary": "切换到指定页面",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pageId": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "pageId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.list": {
+      "summary": "分页查找图层摘要；query 按名称/文字匹配，tag 按 HTML 标签匹配，不返回源码或脚本",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pageId": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "tag": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "charts.list": {
+      "summary": "列出图表候选与表格；候选不代表已识别",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pageId": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "charts.read": {
+      "summary": "读取图表数据与能力；Canvas 在隔离副本中识别",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "charts.bind": {
+      "summary": "确认识别结果并绑定，不转换原图",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "acceptDetected": {
+            "type": "boolean"
+          },
+          "detectionId": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "id",
+          "acceptDetected"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "charts.update": {
+      "summary": "原子修改一张图表或表格的多个单元格",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "cells": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5200,
+            "items": {
+              "type": "object",
+              "properties": {
+                "row": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "column": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "value": {
+                  "type": [
+                    "number",
+                    "string"
+                  ],
+                  "maxLength": 5000
+                }
+              },
+              "required": [
+                "row",
+                "column",
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "cells"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "charts.structure": {
+      "summary": "增删或重命名分类、系列或数据点",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "axis": {
+            "type": "string",
+            "enum": [
+              "row",
+              "column"
+            ]
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "add",
+              "delete",
+              "rename"
+            ]
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "id",
+          "axis",
+          "operation",
+          "index"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "history.undo": {
+      "summary": "撤回一个编辑事务",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "history.redo": {
+      "summary": "重做一个编辑事务",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "preview.start": {
+      "summary": "预览当前页，等待可见内容就绪",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "timeoutMs": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 20000
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "preview.status": {
+      "summary": "读取预览状态",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "preview.stop": {
+      "summary": "退出预览",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "files.create": {
+      "summary": "生成可移植工程或 HTML 副本内容，不覆盖文件",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "project",
+              "html"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "missingFonts": {
+            "type": "string",
+            "enum": [
+              "error",
+              "online"
+            ]
+          }
+        },
+        "required": [
+          "format"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "files.download": {
+      "summary": "下载工程或 HTML 副本，不覆盖关联文件",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "project",
+              "html"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "missingFonts": {
+            "type": "string",
+            "enum": [
+              "error",
+              "online"
+            ]
+          }
+        },
+        "required": [
+          "format"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

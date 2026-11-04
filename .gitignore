@@ -1,0 +1,17 @@
+node_modules/
+qa/
+reports/
+.DS_Store
+.env
+.env.*
+!.env.example
+*.htmlstudio
+connection.json
+settings.json
+runtime/
+*.tar.gz
+dist/vendor/fonts/
+HTML Studio-*.html
+releases/*
+!releases/html全能编辑器-v0.5.0-轻量版.zip
+!releases/SHA256SUMS.txt

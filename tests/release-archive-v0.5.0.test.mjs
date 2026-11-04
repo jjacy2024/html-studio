@@ -1,0 +1,9 @@
+import fs from 'node:fs/promises';import path from 'node:path';import os from 'node:os';import {execFileSync,spawn} from 'node:child_process';import {createHash} from 'node:crypto';import assert from 'node:assert/strict';
+const qa='qa/general-editing-v0.5.0/archive',temporary=await fs.mkdtemp(path.join(os.tmpdir(),'htmlstudio-release-')),manifest=JSON.parse(await fs.readFile('qa/mac-app-v0.5.0/packages.json','utf8'));await fs.mkdir(qa,{recursive:true});
+const hash=b=>createHash('sha256').update(b).digest('hex');
+try{
+ for(const p of manifest.packages){const target=path.join(temporary,p.variant);await fs.mkdir(target);execFileSync('ditto',['-x','-k',p.archive,target]);const dir=path.join(target,p.name),app=path.join(dir,'html全能编辑器.app');for(const [file,digest] of Object.entries(p.files))assert.equal(hash(await fs.readFile(path.join(app,file))),digest);execFileSync('codesign',['--verify','--deep','--strict',app]);assert.equal(hash(await fs.readFile(path.join(app,'Contents/Resources/Editor/HTML Studio.html'))),hash(await fs.readFile('HTML Studio.html')));assert.equal(hash(await fs.readFile(path.join(app,'Contents/Resources/Editor/connector/connector.cjs'))),hash(await fs.readFile('connector/connector.cjs')));Object.assign(p,{dir,app,root:path.join(app,'Contents/Resources/Editor'),executable:path.join(app,'Contents/MacOS/HTMLStudioLauncher')});}
+ await fs.writeFile(qa+'/packages.json',JSON.stringify(manifest,null,2));
+ const code=await new Promise((resolve,reject)=>{const child=spawn(process.execPath,['tests/mac-app.test.mjs'],{stdio:'inherit',env:{...process.env,MAC_QA_DIR:qa}});child.on('exit',code=>resolve(code));child.on('error',reject);});assert.equal(code,0,'Extracted Mac application regression failed');
+ console.log('PASS final ZIP extraction, hashes, code signatures and both application runtimes');
+}finally{await fs.rm(temporary,{recursive:true,force:true});}

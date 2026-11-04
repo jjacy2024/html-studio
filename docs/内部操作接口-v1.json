@@ -1,0 +1,354 @@
+{
+  "apiVersion": "1.0",
+  "indexBase": 0,
+  "expected": {
+    "type": "object",
+    "properties": {
+      "documentId": {
+        "type": "string",
+        "maxLength": 300
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100000
+      }
+    },
+    "required": [
+      "documentId",
+      "revision"
+    ],
+    "additionalProperties": false
+  },
+  "commands": {
+    "document.read": {
+      "summary": "读取当前工程状态",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "pages.list": {
+      "summary": "列出页面及稳定元素 ID",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "pages.select": {
+      "summary": "切换到指定页面",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pageId": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "pageId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "elements.list": {
+      "summary": "分页读取图层摘要，不返回源码或脚本",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pageId": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "charts.list": {
+      "summary": "列出图表候选与表格；候选不代表已识别",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pageId": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "charts.read": {
+      "summary": "读取图表数据与能力；Canvas 在隔离副本中识别",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "charts.bind": {
+      "summary": "确认识别结果并绑定，不转换原图",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "acceptDetected": {
+            "type": "boolean"
+          },
+          "detectionId": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "id",
+          "acceptDetected"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "charts.update": {
+      "summary": "原子修改一张图表或表格的多个单元格",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "cells": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5200,
+            "items": {
+              "type": "object",
+              "properties": {
+                "row": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "column": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "value": {
+                  "type": [
+                    "number",
+                    "string"
+                  ],
+                  "maxLength": 5000
+                }
+              },
+              "required": [
+                "row",
+                "column",
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "cells"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "charts.structure": {
+      "summary": "增删或重命名分类、系列或数据点",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "axis": {
+            "type": "string",
+            "enum": [
+              "row",
+              "column"
+            ]
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "add",
+              "delete",
+              "rename"
+            ]
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "id",
+          "axis",
+          "operation",
+          "index"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "history.undo": {
+      "summary": "撤回一个编辑事务",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "history.redo": {
+      "summary": "重做一个编辑事务",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "preview.start": {
+      "summary": "预览当前页，等待可见内容就绪",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "timeoutMs": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 20000
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "preview.status": {
+      "summary": "读取预览状态",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "preview.stop": {
+      "summary": "退出预览",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    "files.create": {
+      "summary": "生成可移植工程或 HTML 副本内容，不覆盖文件",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "project",
+              "html"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "missingFonts": {
+            "type": "string",
+            "enum": [
+              "error",
+              "online"
+            ]
+          }
+        },
+        "required": [
+          "format"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "files.download": {
+      "summary": "下载工程或 HTML 副本，不覆盖关联文件",
+      "write": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "project",
+              "html"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "missingFonts": {
+            "type": "string",
+            "enum": [
+              "error",
+              "online"
+            ]
+          }
+        },
+        "required": [
+          "format"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}
