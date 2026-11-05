@@ -1,3 +1,4 @@
+import {installTemplateCharts,templateChartTarget,templateChartDataTarget} from './template-charts.js';
 import {createEditorOperations,createEditorArtifact} from './operations.js';
 import {installAgentBridge} from './agent-bridge.js';
 import { icon, hydrateIcons } from "./icons.js";
@@ -604,8 +605,10 @@ class Editor {
     this.doc.addEventListener("dblclick", (e) => {
       // Once editing, let the browser handle double-click word selection.
       if (this.preview || this.tool !== "select" || this.finishText) return;
+      const templateChart=templateChartTarget(e.target);
+      if(templateChart&&templateChartDataTarget(templateChart,e.target)&&this.openTemplateChartEditor(templateChart)){e.preventDefault();this.select([this.id(templateChart)],{reveal:true});return;}
       const svg = e.target.closest?.('svg');
-      if (svg && !svg.closest('[data-studio-chart]') && e.target.closest('rect,text,circle') &&
+      if (!templateChart && svg && !svg.closest('[data-studio-chart]') && e.target.closest('rect,text,circle') &&
           this.openSVGChartEditor(svg, e.target, { quiet: true })) {
         e.preventDefault();
         this.select([this.id(svg)], { reveal: true, anchor: this.id(svg) });
@@ -620,7 +623,7 @@ class Editor {
       }
       // Only chart-labelled content opts into data editing; normal text keeps its editor.
       const barNode = e.target.closest?.('[data-studio-html-chart],[class*="bar"],[class*="chart"]') || (!svg && htmlShareTarget(e.target));
-      if (!svg && barNode && !this.locked(e.target)) {
+      if (!templateChart && !svg && barNode && !this.locked(e.target)) {
         const target = htmlBarTarget(e.target);
         if (this.openHTMLBarEditor(target, e.target, { quiet: true })) {
           e.preventDefault();
@@ -1307,6 +1310,7 @@ class Editor {
   revealAnimatedContent() {
     const style = this.doc.querySelector('[data-hs-runtime="edit-style"]');
     if (!style) return;
+    this.doc.querySelectorAll('[data-hs-runtime="reveal-animation"]').forEach(el => el.remove());
     style.disabled = true;
     const animated = $$("[data-hs-id]", this.doc.body).filter(
       (el) => this.style(el).animationName !== "none",
@@ -1319,15 +1323,20 @@ class Editor {
           !el.hasAttribute("data-hs-opacity-edited"),
       )
       .map((el) => this.id(el));
-    if (ids.length) {
+    // Some decks only assign animation-name after their script adds .is-active.
+    // Their known entrance markers still need a visible editing state without
+    // running that script or changing authored classes. A normal CSS rule keeps
+    // inline opacity (for example muted subtitles) and explicit user edits intact.
+    const entrance = ['fade-in', 'fade-up', 'reveal-left', 'reveal-right', 'scale-in']
+      .map(name => `[data-anim="${name}"]`).join(',');
+    const rules = ids.map(id =>
+      `[data-hs-id="${id}"]:not([data-hs-opacity-edited]){opacity:1!important}`);
+    if (this.doc.querySelector(`.slide :is(${entrance})`))
+      rules.push(`.slide :is(${entrance}):not([data-hs-opacity-edited]){opacity:1}`);
+    if (rules.length) {
       const reveal = this.doc.createElement("style");
       reveal.dataset.hsRuntime = "reveal-animation";
-      reveal.textContent = ids
-        .map(
-          (id) =>
-            `[data-hs-id="${id}"]:not([data-hs-opacity-edited]){opacity:1!important}`,
-        )
-        .join("");
+      reveal.textContent = rules.join("");
       this.doc.head.append(reveal);
     }
   }
@@ -1444,7 +1453,7 @@ class Editor {
     );
     if (nodes.length === 1 && el.closest('table,[data-studio-chart]'))
       html += section('数据', '<button class="full-button" data-action="edit-data">编辑数据与行列…</button><p class="inspector-note">表格公式和绑定图表会随数据同步更新。</p>');
-    else if (nodes.length === 1 && (el.matches('svg,canvas,div,figure,section') || el.closest('[data-studio-html-chart]')))
+    else if (nodes.length === 1 && (el.matches('svg,canvas,div,figure,section') || el.closest('[data-studio-html-chart],[data-studio-template-chart]')))
       html += section('数据图表', '<button class="full-button" data-action="edit-chart-data">编辑图表数据…</button><p class="inspector-note">优先保留原样式；无法保留时会先询问。</p>');
     if (nodes.length === 1 && el.tagName === 'VIDEO')
       html += section('视频播放', ['controls','loop','muted','autoplay'].map((key,i) => `<label class="video-option"><input type="checkbox" data-video-prop="${key}" ${el.hasAttribute(key)?'checked':''}>${['显示播放控件','循环播放','静音','自动播放（同时开启静音）'][i]}</label>`).join('') + '<p class="inspector-note">编辑时用于选择和排版，点击顶部预览播放。导出内嵌视频；播放取决于浏览器支持的编码。</p>');
@@ -2154,6 +2163,11 @@ class Editor {
     this.scheduleDraft();
   }
   setPreviewUI() {
+    const scroll = $("#canvas-scroll");
+    if (this.preview && !this.previewViewport) {
+      this.previewViewport = { left: scroll.scrollLeft, top: scroll.scrollTop };
+      hideMenu();
+    }
     $("#app").classList.toggle("previewing", this.preview);
     $("#preview-frame").hidden = !this.preview;
     this.frame.hidden = this.preview;
@@ -2169,6 +2183,36 @@ class Editor {
     $("#undo").disabled = this.preview || this.historyIndex <= 0;
     $("#redo").disabled =
       this.preview || this.historyIndex >= this.history.length - 1;
+    if (!this.preview) {
+      this.leavePreviewFullscreen();
+      if (this.previewViewport) {
+        scroll.scrollLeft = this.previewViewport.left;
+        scroll.scrollTop = this.previewViewport.top;
+        this.previewViewport = null;
+      }
+    }
+  }
+  leavePreviewFullscreen() {
+    if (!this.previewFullscreen) return;
+    this.previewFullscreen = false;
+    if (document.fullscreenElement === document.documentElement)
+      document.exitFullscreen().catch(() => {});
+  }
+  async togglePreviewFullscreen() {
+    if (!this.preview) return;
+    if (document.fullscreenElement) {
+      this.previewFullscreen = false;
+      try { await document.exitFullscreen(); } catch { toast("无法退出全屏，请按 Esc"); }
+      return;
+    }
+    try {
+      this.previewFullscreen = true;
+      await document.documentElement.requestFullscreen();
+      if (!this.preview) this.leavePreviewFullscreen();
+    } catch {
+      this.previewFullscreen = false;
+      toast("浏览器未允许全屏，已保留整窗预览");
+    }
   }
   togglePreview(force) {
     if (this.loading || this.isHome) return;
@@ -2182,6 +2226,7 @@ class Editor {
       const version = this.loadVersion, generation = this.previewGeneration = (this.previewGeneration || 0) + 1;
       const onStatus = status => {
         if (!this.preview || version !== this.loadVersion || generation !== this.previewGeneration) return;
+        $('#app').dataset.previewState = status.state;
         this.previewStatus = status;
         if (status.message && this.previewDiagnostics.at(-1)?.message !== status.message) {
           this.previewDiagnostics.push(status); this.previewDiagnostics = this.previewDiagnostics.slice(-12);
@@ -2512,6 +2557,7 @@ installAuthoring(Editor, { modal, closeModal, toast });
 installFontSupport(Editor, { modal, closeModal, toast });
 installDataTools(Editor, { modal, closeModal, toast });
 installSVGCharts(Editor, { modal, closeModal, toast });
+installTemplateCharts(Editor, { modal, closeModal });
 installHTMLBars(Editor, { modal, closeModal });
 installCanvasCharts(Editor, { modal, closeModal });
 const editor = new Editor();
@@ -2820,6 +2866,17 @@ $("#compatibility-button").onclick = async () => {
 };
 $("#exit-preview").onclick = () => editor.togglePreview(false);
 $("#restart-preview").onclick = () => editor.togglePreview(true);
+$("#preview-fullscreen").hidden = !document.fullscreenEnabled;
+$("#preview-fullscreen").onclick = () => editor.togglePreviewFullscreen();
+document.addEventListener("fullscreenchange", () => {
+  const active = !!document.fullscreenElement;
+  $("#preview-fullscreen").textContent = active ? "退出全屏" : "全屏显示";
+  $("#preview-fullscreen").setAttribute("aria-pressed", String(active));
+  if (!active && editor.previewFullscreen) {
+    editor.previewFullscreen = false;
+    if (editor.preview) editor.togglePreview(false);
+  }
+});
 $("#preview-details").onclick = async () => {
   const session=editor.cancelPreview;
   const inspected=await session?.inspect?.();

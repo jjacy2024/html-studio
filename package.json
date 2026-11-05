@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check dist/app.js && node --check dist/document.js && node --check dist/pages.js && node --check dist/demo.js && node --check dist/icons.js && node --check dist/preview-runtime.js && node --check dist/assets.js && node --check dist/compatibility.js && node --check dist/authoring.js && node --check dist/table-editing.js && node --check dist/data-tools.js && node --check dist/templates.js && node --check dist/template-fonts.js && node --check dist/template-font-data.js && node --check dist/font-cache.js && node --check dist/font-ui.js && node --check dist/template-covers.js && node --check dist/grouping.js && node --check dist/fit-content.js && node --check dist/svg-bubble.js && node --check dist/svg-waterfall.js && node --check dist/svg-chart.js && node --check dist/html-share.js && node --check dist/html-bars.js && node --check dist/canvas-charts.js && node --check dist/page-order.js && node --check dist/preview-session.js && node --check dist/data-paste.js && node --check dist/page-thumbnails.js && node --check dist/chart-structure.js && node --check dist/element-operations.js && node --check dist/operations.js && node --check dist/agent-bridge.js && node --check connector/cli.mjs && node --check connector/broker.mjs && node --check connector/mcp.mjs && node --check dist/agent-setup.js && node --check connector/setup-codex.mjs",
+    "check": "node --check dist/app.js && node --check dist/document.js && node --check dist/pages.js && node --check dist/demo.js && node --check dist/icons.js && node --check dist/preview-runtime.js && node --check dist/assets.js && node --check dist/compatibility.js && node --check dist/authoring.js && node --check dist/table-editing.js && node --check dist/data-tools.js && node --check dist/templates.js && node --check dist/template-fonts.js && node --check dist/template-font-data.js && node --check dist/font-cache.js && node --check dist/font-ui.js && node --check dist/template-covers.js && node --check dist/grouping.js && node --check dist/fit-content.js && node --check dist/svg-bubble.js && node --check dist/svg-waterfall.js && node --check dist/svg-chart.js && node --check dist/html-share.js && node --check dist/html-bars.js && node --check dist/canvas-charts.js && node --check dist/page-order.js && node --check dist/preview-session.js && node --check dist/data-paste.js && node --check dist/page-thumbnails.js && node --check dist/chart-structure.js && node --check dist/element-operations.js && node --check dist/operations.js && node --check dist/agent-bridge.js && node --check connector/cli.mjs && node --check connector/broker.mjs && node --check connector/mcp.mjs && node --check dist/agent-setup.js && node --check connector/setup-codex.mjs && node --check dist/chart-paints.js && node --check dist/template-charts-core.js && node --check dist/template-charts.js",
     "test": "node tests/editor.test.mjs",
     "test:layers": "node tests/layer-reveal.test.mjs",
     "test:pages": "node tests/pages.test.mjs",
@@ -61,7 +61,12 @@
     "package:lite": "node scripts/package-lite-v0.5.0.mjs --zip",
     "test:lite": "node tests/lite-launcher.test.mjs",
     "test:text-exit": "node tests/text-exit.test.mjs",
-    "test:fit-content": "node tests/fit-content.test.mjs"
+    "test:fit-content": "node tests/fit-content.test.mjs",
+    "test:template-charts": "node tests/template-charts.test.mjs",
+    "test:chart-paints": "node tests/chart-paints.test.mjs",
+    "test:template-chart-regression": "node scripts/test-template-charts.mjs",
+    "test:preview-fullscreen": "node tests/preview-fullscreen.test.mjs",
+    "test:edit-animation-visibility": "node tests/edit-animation-visibility.test.mjs"
   },
   "devDependencies": {
     "playwright": "1.61.1"

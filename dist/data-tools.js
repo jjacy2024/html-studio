@@ -1,3 +1,4 @@
+import {mountChartPaints,validChartColor} from './chart-paints.js';
 import {detectTableHeatmap,refreshTableHeatmap,resizeTableColumns,updateKnownChartMotion} from './chart-structure.js';
 import {bindDataPaste} from './data-paste.js';
 import { annotate, escapeHTML, uid } from './document.js';
@@ -146,7 +147,7 @@ export function renderDataChart(element, model, doc = element.ownerDocument) {
     if (!total) marks = '<text x="60" y="175" fill="#777">总和为 0，暂无可绘制的占比。</text>';
     else rows.forEach((row, i) => {
       const fraction = row[pieColumn]/total, end = angle + fraction*2*Math.PI, radius = 105, cx = 180, cy = 195;
-      const color = chartColors[i%chartColors.length];
+      const color = validChartColor(model.colors?.[`${i+1}:${pieColumn}`])?model.colors[`${i+1}:${pieColumn}`]:chartColors[i%chartColors.length];
       if (fraction >= 0.9999999) marks += `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="${color}"><title>${escChart(row[0])}: ${row[pieColumn]}</title></circle>`;
       else if (fraction > 0) marks += `<path data-value="${row[pieColumn]}" d="M${cx},${cy} L${cx+radius*Math.cos(angle)},${cy+radius*Math.sin(angle)} A${radius},${radius} 0 ${fraction>0.5?1:0} 1 ${cx+radius*Math.cos(end)},${cy+radius*Math.sin(end)} Z" fill="${color}" stroke="white" stroke-width="1"><title>${escChart(row[0])}: ${(fraction*100).toFixed(1)}%</title></path>`;
       angle = end;
@@ -163,9 +164,10 @@ export function renderDataChart(element, model, doc = element.ownerDocument) {
       if (model.type === 'line') marks += `<polyline data-series="${s}" points="${rows.map((r,i) => `${L+step*(i+0.5)},${y(r[s+1])}`).join(' ')}" fill="none" stroke="${color}" stroke-width="2.5"/>`;
       rows.forEach((r,i) => {
         const v=r[s+1], x=L+step*(i+0.5), yy=y(v);
+        const pointColor=validChartColor(model.colors?.[`${i+1}:${s+1}`])?model.colors[`${i+1}:${s+1}`]:color;
         const title=`<title>${escChart(r[0])} · ${escChart(name)}: ${v}</title>`;
-        if (model.type === 'line') marks += `<circle cx="${x}" cy="${yy}" r="3.5" fill="${color}">${title}</circle>`;
-        else { const width=step*0.76/series.length; marks += `<rect data-value="${v}" x="${L+step*i+step*0.12+s*width}" y="${Math.min(zero,yy)}" width="${Math.max(0.1,width-1)}" height="${Math.abs(zero-yy)}" fill="${color}">${title}</rect>`; }
+        if (model.type === 'line') marks += `<circle cx="${x}" cy="${yy}" r="3.5" fill="${pointColor}">${title}</circle>`;
+        else { const width=step*0.76/series.length; marks += `<rect data-value="${v}" x="${L+step*i+step*0.12+s*width}" y="${Math.min(zero,yy)}" width="${Math.max(0.1,width-1)}" height="${Math.abs(zero-yy)}" fill="${pointColor}">${title}</rect>`; }
       });
     });
     rows.forEach((r,i) => { if (i % Math.max(1,Math.ceil(rows.length/9)) === 0) marks += `<text x="${L+step*(i+0.5)}" y="${H-B+22}" text-anchor="middle">${escChart(String(r[0]).slice(0,10))}</text>`; });
@@ -300,6 +302,7 @@ export function installDataTools(Editor, ui) {
       q('#data-cell-result').textContent = `${columnName(colIndex)}${rowIndex+1} · 结果：${value ?? ''}`;
       body.querySelectorAll('[data-cell]').forEach(n => n.classList.toggle('active-cell', Number(n.dataset.r) === rowIndex && Number(n.dataset.c) === colIndex));
     };
+    let paintPanel;
     const draw = () => {
       const g = currentGrid(), linked = !!model?.table;
       q('#data-grid').innerHTML = `<thead><tr><th></th>${g[0].map((_,c) => `<th>${columnName(c)}</th>`).join('')}</tr></thead><tbody>${g.map((row,r) => `<tr><th>${r+1}</th>${row.map((cell,c) => `<td><input data-cell data-r="${r}" data-c="${c}" aria-label="${columnName(c)}${r+1}" value="${escData(cell)}" ${linked||!chart&&(!tableCellSlot(target.rows[r].cells[c])||editor.locked(target.rows[r].cells[c])||target.rows[r].cells[c].querySelector('[data-hs-locked="true"]'))?'readonly':''} spellcheck="false"></td>`).join('')}</tr>`).join('')}</tbody>`;
@@ -312,6 +315,7 @@ export function installDataTools(Editor, ui) {
         q('#data-chart-series').disabled = model.type !== 'pie';
       }
       rowIndex = Math.min(rowIndex,g.length-1); colIndex = Math.min(colIndex,g[0].length-1); detail();
+      if(chart||heatmap)mountColors();
     };
     q('#data-grid').addEventListener('focusin', event => {
       if (!event.target.matches('[data-cell]')) return;
@@ -381,6 +385,8 @@ export function installDataTools(Editor, ui) {
       }
       if(!chart&&axis==='column')resizeTableColumns(target,index,deleting);
       if(!chart)updateKnownChartMotion(editor.doc);
+      if(!chart&&target.dataset.studioTable)for(const linked of editor.doc.querySelectorAll('[data-studio-chart]')){try{const linkedModel=JSON.parse(linked.dataset.studioChart);if(linkedModel.table!==target.dataset.studioTable||!linkedModel.colors)continue;const shifted={};for(const [key,color]of Object.entries(linkedModel.colors)){const pos=key.split(':').map(Number),a=axis==='row'?0:1;if(deleting&&pos[a]===index)continue;if(pos[a]>=index)pos[a]+=deleting?-1:1;shifted[pos.join(':')]=color;}linkedModel.colors=shifted;linked.dataset.studioChart=JSON.stringify(linkedModel);}catch{}}
+      if(chart&&model.colors){const next={};for(const [key,color] of Object.entries(model.colors)){const pos=key.split(':').map(Number),a=axis==='row'?0:1;if(deleting&&pos[a]===index)continue;if(pos[a]>=index)pos[a]+=deleting?-1:1;next[pos.join(':')]=color;}model.colors=next;}
       grid = grid.map(row=>row.map(raw=>shiftFormula(raw,axis,index,deleting)));
       for(const cell of edgeTotals){const r=cell.parentElement.rowIndex,c=cell.cellIndex;grid[r][c]=grid[r][c].replace(/:([A-Z]+)(\d+)\)/,(_,letter,row)=>`:${axis==='row'?letter:columnName(cellAddress(letter+'1')[1]+1)}${axis==='row'?Number(row)+1:row})`);}
       for(const item of newFormulas){grid[item.r][item.c]=item.formula;item.cell.dataset.studioAutoSum=item.axis;}
@@ -394,13 +400,17 @@ export function installDataTools(Editor, ui) {
       q('#data-chart-type').onchange=event=>{flush();model.type=event.target.value;sync('修改图表类型');draw();};
       q('#data-chart-title').oninput=event=>{model.title=event.target.value;pending=true;sync('修改图表标题',false);};
       q('#data-chart-title').onchange=flush;
-      q('#data-chart-series').onchange=event=>{model.series=Number(event.target.value);sync('切换饼图数值列');};
+      q('#data-chart-series').onchange=event=>{model.series=Number(event.target.value);sync('切换饼图数值列');draw();};
       q('#data-chart-source').onchange=event=>{
         flush();
         if(event.target.value===''){grid=currentGrid().map(row=>[...row]);delete model.table;}
         else { const table=tableOptions[Number(event.target.value)]; if(!table.dataset.studioTable)table.dataset.studioTable=uid(); model.table=table.dataset.studioTable; }
         sync('绑定图表数据');draw();
       };
+    }
+    function mountColors(){
+      if(!chart){mountChartPaints(body,{valid:validTarget,items:()=>[...target.querySelectorAll('td > span[style*="background"]')].map(node=>({node,name:`第 ${node.closest('tr').rowIndex+1} 行 · 第 ${node.closest('td').cellIndex+1} 列`,color:editor.style(node).backgroundColor})),change(item,color){if(editor.locked(item.node))throw Error('此单元格已锁定');flush();if(color)item.node.setAttribute('data-studio-chart-color',color);else item.node.removeAttribute('data-studio-chart-color');sync('修改热力图单元格颜色');}});return;}
+      paintPanel=mountChartPaints(body,{valid:validTarget,items:()=>{const g=currentGrid(),cols=model.type==='pie'?[Math.max(1,Math.min(g[0].length-1,Number(model.series)||1))]:g[0].slice(1).map((_,i)=>i+1);return g.slice(1).flatMap((row,i)=>cols.map(c=>({r:i+1,c,name:String(row[0])+' · '+g[0][c],color:model.colors?.[`${i+1}:${c}`]||chartColors[(model.type==='pie'?i:c-1)%chartColors.length]})));},change(item,color){flush();model.colors ||= {};const key=`${item.r}:${item.c}`;if(color===null)delete model.colors[key];else model.colors[key]=color;sync(color===null?'恢复图表元素原色':'修改图表元素颜色');}});
     }
     draw(); updatePreview();
   };

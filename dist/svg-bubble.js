@@ -1,3 +1,4 @@
+import {mountDOMChartPaints} from './chart-paints.js';
 import {focusStructureChange,mountChartStructure,structureTransaction,structureClone,structureText,structureNumber,updateKnownChartMotion} from './chart-structure.js';
 import {bindDataPaste,pasteNumber} from './data-paste.js';
 // Bind explicit three-dimensional data to existing circles. Geometry verifies the
@@ -223,6 +224,7 @@ export function createSVGBubbleAdapter(api) {
     });
     body.querySelector('#svg-bubble-grid').addEventListener('change',flush);q('#dialog').addEventListener('cancel',flush);q('#dialog').addEventListener('close',()=>{flush();q('#dialog').removeEventListener('cancel',flush);if(q('#dialog').flushData===flush)delete q('#dialog').flushData;},{once:true});
     mountChartStructure(body,{rows:model.points.map(p=>p.name),rowLabel:'数据点',columnHint:'X、Y、面积是气泡图的固定维度；新增行可添加数据点。',valid,change:change=>{if(!valid())return;flush();model=changePointStructure(editor,svg,model,change);editor.commit('调整气泡图数据点');closeModal();editor.openSVGChartEditor(svg);focusStructureChange(change);}});
+    mountDOMChartPaints(body,editor,svg,{items:()=>model.points.map(p=>({name:p.name,node:svg.querySelector(`[data-studio-svg-key="${p.key}"]`)})),flush,preview});
     preview();if(chosen){const input=body.querySelector(`[data-svg-point="${chosen.key}"]`);input?.focus();input?.select();}return true;
   }
   return {analyze,bind,read,update,open,changeStructure:changePointStructure};

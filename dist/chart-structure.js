@@ -67,6 +67,7 @@ export function updateKnownChartMotion(doc) {
   // are left untouched.
   const script=doc.querySelector('script#qiwu-chart-motion');if(!script||!script.textContent.includes('CHART ENTRANCE MOTION'))return;
   script.textContent=script.textContent
+    .replace(/s\.background=(v>=350\?[^;]+);/,"s.background=tile.getAttribute('data-studio-chart-color')||($1);")
     .replace('if (tiles.length !== 24) continue;',"if (tiles.length !== 24 && !table.hasAttribute('data-studio-heatmap')) continue;")
     .replace("for (const first of document.querySelectorAll('.slide div[style*=\"width:81.865%\"]')) {\n    const root=first.parentElement, parts=[...root.children]; if(parts.length!==2)continue;","for (const root of new Set([...document.querySelectorAll('.slide div[style*=\"width:81.865%\"]')].map(n=>n.parentElement).concat([...document.querySelectorAll('[data-studio-html-chart]')].filter(n=>{try{return JSON.parse(n.getAttribute('data-studio-html-chart')).kind==='share'}catch{return false}})))) {\n    const parts=[...root.children]; if(!parts.length)continue;");
 }
@@ -229,7 +230,7 @@ function heatColor(m,v){const i=m.thresholds.findIndex(n=>v>=n);return m.colors[
 export function refreshTableHeatmap(table,model) {
   if(!model){try{model=JSON.parse(table.getAttribute('data-studio-heatmap'));}catch{return;}}
   if(!validHeatmap(model))return;
-  for(const tile of table.querySelectorAll('td > span[style*="background"]')){const raw=tile.textContent.trim().replaceAll(',',''),value=Number(raw);if(raw&&Number.isFinite(value))tile.style.background=heatColor(model,value);}
+  for(const tile of table.querySelectorAll('td > span[style*="background"]')){const raw=tile.textContent.trim().replaceAll(',',''),value=Number(raw);if(raw&&Number.isFinite(value))tile.style.background=/^#[0-9a-f]{6}$/i.test(tile.getAttribute('data-studio-chart-color')||'')?tile.getAttribute('data-studio-chart-color'):heatColor(model,value);}
   table.setAttribute('data-studio-heatmap',JSON.stringify(model));
 }
 export function resizeTableColumns(table,index,deleting) {

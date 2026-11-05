@@ -1,3 +1,4 @@
+import {readTemplateChart,updateTemplateChart,changeTemplateChartStructure} from './template-charts-core.js';
 import {label,selectable,cleanDocument,projectData} from './document.js';
 import {analyzeSVGBarChart,bindSVGBarChart,readSVGBarModel,updateSVGBarChart,changeSVGChartStructure} from './svg-chart.js';
 import {analyzeHTMLBars,bindHTMLBars,htmlBarElements,htmlBarTarget,updateHTMLBars,changeHTMLBarStructure} from './html-bars.js';
@@ -62,6 +63,7 @@ export async function createEditorArtifact(editor,{format,name,missingFonts='err
   return {filename:opFileName(title)+(format==='project'?'.htmlstudio':'.html'),mimeType:format==='project'?'application/json':'text/html;charset=utf-8',content:format==='project'?JSON.stringify({...data,name:title,html},null,2):html,warnings:[...data.warnings]};
 }
 function opRenderer(node) {
+  if(node.hasAttribute('data-studio-template-chart'))return 'template';
   if(node.hasAttribute('data-studio-chart'))return 'native';
   if(node.tagName==='TABLE')return 'table';
   if(node.tagName==='CANVAS')return 'chartjs';
@@ -69,10 +71,11 @@ function opRenderer(node) {
   return 'html';
 }
 function opBound(node,renderer) {
-  return ['native','table'].includes(renderer)||node.hasAttribute(({svg:'data-studio-svg-chart',html:'data-studio-html-chart',chartjs:'data-studio-chartjs'})[renderer]);
+  return ['native','table'].includes(renderer)||node.hasAttribute(({template:'data-studio-template-chart',svg:'data-studio-svg-chart',html:'data-studio-html-chart',chartjs:'data-studio-chartjs'})[renderer]);
 }
 function opReadModel(node,renderer) {
   try{
+    if(renderer==='template')return readTemplateChart(node);
     if(renderer==='svg')return readSVGBarModel(node);
     if(renderer==='html'){const m=JSON.parse(node.getAttribute('data-studio-html-chart'));htmlBarElements(node,m);return m;}
     if(renderer==='chartjs'){const m=JSON.parse(node.getAttribute('data-studio-chartjs'));opAssert(validCanvasModel(m),'INVALID_BINDING','Chart.js 绑定无效');return m;}
@@ -88,13 +91,14 @@ function opChartView(editor,node,renderer,model,bound=true) {
     if(model.table){const table=[...editor.doc.querySelectorAll('table[data-studio-table]')].find(t=>t.dataset.studioTable===model.table);opAssert(table&&!tableProblem(table),'INVALID_BINDING','图表绑定的数据表不存在或不可读取');raw=tableGrid(table).filter((_,i)=>table.rows[i].parentElement.tagName!=='TFOOT'&&![...table.rows[i].cells].some(c=>c.dataset.studioAutoSum==='column'));}
     if(renderer==='table') {rows=raw.map((_,r)=>`第 ${r+1} 行`);columns=raw[0].map((_,c)=>`第 ${c+1} 列`);values=evaluateGrid(raw);readonly=[...node.rows].flatMap((r,i)=>[...r.cells].filter(c=>c.dataset.studioAutoSum).map(c=>({row:i,column:c.cellIndex})));}
     else{rows=raw.slice(1).map(r=>r[0]);columns=raw[0].slice(1);values=evaluateGrid(raw).slice(1).map(r=>r.slice(1));}
-  }else if(renderer==='chartjs') {rows=model.labels;columns=model.series;values=rows.map((_,r)=>model.values.map(v=>v[r]));}
+  }else if(renderer==='template'){rows=model.items.map(i=>i.name);columns=['数值'];values=model.items.map(i=>[i.value]);}
+  else if(renderer==='chartjs') {rows=model.labels;columns=model.series;values=rows.map((_,r)=>model.values.map(v=>v[r]));}
   else if(kind==='bubble') {rows=model.points.map(p=>p.name);columns=model.fields.map((f,i)=>['X','Y','面积'][i]+' · '+f.name);values=model.points.map(p=>bound?[p.x,p.y,p.size]:p.values);}
   else if(renderer==='html') {rows=model.bars.map(b=>b.category);columns=['数值'];values=model.bars.map(b=>[b.value]);}
   else {rows=bound?model.categories:model.groups.map(g=>g.label.text);columns=model.series;values=bound?rows.map((_,r)=>columns.map((_,c)=>model.bars.find(b=>b.row===r&&b.column===c)?.value)):model.groups.map(g=>g.bars.map(b=>b.value));readonly=(bound?model.bars:model.groups.map((g,r)=>({row:r,column:0,role:g.role}))).filter(b=>b.role==='total').map(b=>({row:b.row,column:b.column}));}
   const locked=editor.locked(node)||!!node.querySelector('[data-hs-locked="true"]'),linked=!!model.table;
   return {id:editor.id(node),renderer,kind,bound,rows,columns,values,...(raw?{raw}:{}),readonly,locked,linkedTable:linked?model.table:null,
-    capabilities:{bind:!bound&&!locked,update:bound&&!locked&&!linked,addRows:bound&&!locked&&!linked&&renderer!=='table',addColumns:bound&&!locked&&!linked&&!['html','table'].includes(renderer)&&!['bubble','waterfall'].includes(kind)},
+    capabilities:{bind:!bound&&!locked,update:bound&&!locked&&!linked,addRows:bound&&!locked&&!linked&&(renderer==='template'?!!model.structure:renderer!=='table'),addColumns:bound&&!locked&&!linked&&!['html','table','template'].includes(renderer)&&!['bubble','waterfall'].includes(kind)},
     limits:kind==='bubble'?{x:[model.axes.x.min,model.axes.x.max],y:[model.axes.y.min,model.axes.y.max]}:undefined};
 }
 function opStructureChange(view,params) {
@@ -113,6 +117,7 @@ function opNativeStructure(model,change) {
   const slot=operation==='add'?at+1:at,deleting=operation==='delete';
   if(axis==='row')g.splice(slot,deleting?1:0,...(deleting?[]:[[name,...g[0].slice(1).map(()=> '0')]]));
   else g.forEach((row,r)=>row.splice(slot,deleting?1:0,...(deleting?[]:[r?'0':name])));
+  if(next.colors){const colors={};for(const [key,color]of Object.entries(next.colors)){const pos=key.split(':').map(Number),a=axis==='row'?0:1;if(deleting&&pos[a]===slot)continue;if(pos[a]>=slot)pos[a]+=deleting?-1:1;colors[pos.join(':')]=color;}next.colors=colors;}
   next.grid=g.map(row=>row.map(raw=>shiftFormula(raw,axis,slot,deleting)));
   if(axis==='column'&&next.series){if(!deleting&&next.series>=slot)next.series++;if(deleting&&next.series>slot)next.series--;next.series=Math.min(next.series,g[0].length-1);}
   return next;
@@ -165,9 +170,9 @@ export function createEditorOperations(editor,{download}={}) {
       return {total:nodes.length,offset,items:nodes.slice(offset,offset+limit).map(n=>({id:editor.id(n),parentId:editor.id(n.parentElement),tag:n.tagName.toLowerCase(),name:label(n),locked:editor.locked(n),text:n.children.length?undefined:n.textContent.slice(0,300)}))};
     }
     if(command==='charts.list'){
-      const root=pageRoot(p.pageId),candidates=new Set([...root.querySelectorAll('[data-studio-chart],[data-studio-svg-chart],[data-studio-html-chart],svg,canvas,table')]);
-      for(const bar of root.querySelectorAll('[class*="bar"],[class*="fill"],[class*="column"],[style*="width"][style*="%"]')){if(bar.ownerSVGElement||bar.closest('[data-studio-chart]'))continue;const n=htmlBarTarget(bar);if(n&&n!==bar&&root.contains(n)&&n!==editor.doc.body)candidates.add(n);}
-      return [...candidates].filter(n=>editor.id(n)&&!n.parentElement?.closest('[data-studio-chart],[data-studio-html-chart]')).map(n=>({id:editor.id(n),name:label(n),renderer:opRenderer(n),bound:opBound(n,opRenderer(n)),candidate:true}));
+      const root=pageRoot(p.pageId),candidates=new Set([...root.querySelectorAll('[data-studio-template-chart],[data-studio-chart],[data-studio-svg-chart],[data-studio-html-chart],svg,canvas,table')]);
+      for(const bar of root.querySelectorAll('[class*="bar"],[class*="fill"],[class*="column"],[style*="width"][style*="%"]')){if(bar.ownerSVGElement||bar.closest('[data-studio-chart],[data-studio-template-chart]'))continue;const n=htmlBarTarget(bar);if(n&&n!==bar&&root.contains(n)&&n!==editor.doc.body)candidates.add(n);}
+      return [...candidates].filter(n=>editor.id(n)&&!n.parentElement?.closest('[data-studio-chart],[data-studio-html-chart],[data-studio-template-chart]')).map(n=>({id:editor.id(n),name:label(n),renderer:opRenderer(n),bound:opBound(n,opRenderer(n)),candidate:true}));
     }
     requireIdle();
     if(Object.hasOwn(ELEMENT_COMMANDS,command))return executeElementCommand(editor,command,p);
@@ -221,9 +226,12 @@ export function createEditorOperations(editor,{download}={}) {
     return runMutation(node,()=>{
       let next=structuredClone(original);
       if(structure){
-        if(renderer==='svg')next=changeSVGChartStructure(editor,node,next,change);
+        if(renderer==='template')next=changeTemplateChartStructure(editor,node,next,change);
+        else if(renderer==='svg')next=changeSVGChartStructure(editor,node,next,change);
         else if(renderer==='html')next=changeHTMLBarStructure(editor,node,next,change);
         else{next=opNativeStructure(next,change);node.dataset.studioChart=JSON.stringify(next);}
+      }else if(renderer==='template'){
+        for(const c of p.cells)next.items[c.row].value=c.value;updateTemplateChart(node,next);
       }else if(renderer==='native'||renderer==='table'){
         const heatmap=renderer==='table'?detectTableHeatmap(node,editor.doc):null;
         const cells=p.cells.map(c=>({row:c.row+(renderer==='native'?1:0),column:c.column+(renderer==='native'?1:0),raw:String(c.value)}));

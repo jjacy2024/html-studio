@@ -1,3 +1,9 @@
+import {templateNavigation} from './template-adapters/navigation.js';
+import {chromium} from 'playwright';
+import {adaptTemplateCharts} from './template-adapters/charts.js';
+import {bindTemplateCanvases,templateCanvasMotion} from './template-adapters/canvas.js';
+import {renderTemplateChart,templateChartMotion} from '../dist/template-charts-core.js';
+import {chartJSDataRuntime} from '../dist/canvas-charts.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -5,7 +11,9 @@ import { replaceTemplateFontLinks } from '../dist/template-fonts.js';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const source = path.resolve(root, '../downloads/beautiful-html-templates-34');
 const license = await fs.readFile(path.join(source, 'LICENSE'), 'utf8');
-const library = [];
+const library = [],chartInventory=[];
+const browser=await chromium.launch({channel:'chrome',headless:true}),page=await browser.newPage();
+await page.addScriptTag({content:`window.adaptTemplateCharts=${adaptTemplateCharts};window.renderTemplateChart=${renderTemplateChart};window.bindTemplateCanvases=${bindTemplateCanvases};`});
 for (const slug of (await fs.readdir(path.join(source, 'templates'), {withFileTypes:true})).filter(e => e.isDirectory()).map(e => e.name).sort()) {
   const folder = path.join(source, 'templates', slug);
   const metadata = JSON.parse(await fs.readFile(path.join(folder, 'template.json'), 'utf8'));
@@ -26,9 +34,18 @@ for (const slug of (await fs.readdir(path.join(source, 'templates'), {withFileTy
     const code = await fs.readFile(filename, 'utf8');
     html = html.replace(match[0], () => `<script${match[1]}${match[3]}>${code.replace(/<\/script/gi, '<\\/script')}</script>`);
   }
+  if(['grove','broadside','monochrome','signal','studio','mat','vellum'].includes(slug))html=html.replace(/function goTo\(index(?:, instant)?\) \{/,m=>`window.presentation={slides,showSlide:index=>{${['broadside','monochrome'].includes(slug)?'isAnimating=false;':''}goTo(index,true)}};\n        ${m}`);
+  if(slug==='8-bit-orbit')html=html.replaceAll("'#barChart .chart-bar'","'#barChart .chart-bar:not([data-studio-tc-key])'").replaceAll("'#barChart .chart-value'","'#barChart .chart-value:not([data-studio-tc-key])'").replaceAll("'#hbarChart .hbar-fill'","'#hbarChart .hbar-fill:not([data-studio-tc-key])'");
+  const adapted=await page.evaluate(({html,slug})=>{const doc=new DOMParser().parseFromString(html,'text/html');const charts=window.adaptTemplateCharts(doc,slug,window.renderTemplateChart),canvases=window.bindTemplateCanvases(doc,slug);return{html:'<!doctype html>\n'+doc.documentElement.outerHTML,charts:[...charts,...canvases],canvas:canvases.length};},{html,slug});
+  html=adapted.html.replace('</body>',()=>`<script data-studio-template-navigation="1">(${templateNavigation})();</script></body>`);chartInventory.push({slug,charts:adapted.charts});
+  if(adapted.canvas)html=html.replace(/<head[^>]*>/i,m=>m+`<script data-studio-chartjs-runtime="1">(${chartJSDataRuntime})({});</script>`);
+  if(adapted.charts.length)html=html.replace('</body>',()=>`<script data-studio-template-motion-runtime="1">(${templateChartMotion})(${renderTemplateChart});${adapted.canvas?`(${templateCanvasMotion})();`:''}</script></body>`);
   html = html.replace(/<head[^>]*>/i, m => `${m}\n<!-- beautiful-html-templates\n${license}\n-->`);
   library.push({ ...metadata, slug, html, online: /https?:\/\//i.test(html.replace(/<!--[\s\S]*?-->/g, '')) });
 }
+await browser.close();
+await fs.mkdir(path.join(root,'qa/template-chart-inventory'),{recursive:true});
+await fs.writeFile(path.join(root,'qa/template-chart-inventory/bound.json'),JSON.stringify(chartInventory,null,2));
 if (library.length !== 34) throw Error(`Expected 34 templates, found ${library.length}`);
 await fs.writeFile(path.join(root, 'dist/templates.js'), `// Generated from the user-supplied MIT template library.\nexport const templateLibrary = ${JSON.stringify(library)};\n`);
 console.log(`Bundled ${library.length} templates (${Buffer.byteLength(JSON.stringify(library))} bytes).`);

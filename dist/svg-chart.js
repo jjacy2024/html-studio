@@ -1,3 +1,5 @@
+import {templateChartTarget} from './template-charts.js';
+import {mountDOMChartPaints} from './chart-paints.js';
 import {focusStructureChange,mountChartStructure,changeSVGStructure} from './chart-structure.js';
 import {bindDataPaste,pasteNumber} from './data-paste.js';
 import {createSVGWaterfallAdapter} from './svg-waterfall.js';
@@ -411,6 +413,7 @@ export function installSVGCharts(Editor,{modal,closeModal}) {
   Editor.prototype.openChartDataEditor=function(){
     const source=this.nodes.length===1?this.nodes[0]:null;
     if(!source||this.loading||this.preview||this.locked(source))return false;
+    const template=templateChartTarget(source);if(template)return this.openTemplateChartEditor(template);
     const native=source.closest('[data-studio-chart],table');
     if(native)return this.openDataEditor(native);
     const boundHTML=source.closest('[data-studio-html-chart]');
@@ -486,6 +489,7 @@ export function installSVGCharts(Editor,{modal,closeModal}) {
     q('#dialog').addEventListener('cancel',flush);
     q('#dialog').addEventListener('close',()=>{flush();q('#dialog').removeEventListener('cancel',flush);if(q('#dialog').flushData===flush)delete q('#dialog').flushData;},{once:true});
     mountChartStructure(body,{rows:model.categories,columns:model.kind==='waterfall'?null:model.series,rowLabel:model.kind==='waterfall'?'步骤':'分类',minRows:model.kind==='waterfall'?3:1,columnHint:'瀑布图只有一个累计数值维度；新增行会插入增量步骤，起始值和最终合计保留。',valid:validTarget,change:change=>{if(!validTarget())return;flush();model=changeSVGChartStructure(editor,svg,model,change);editor.commit('调整 SVG 图表行列');closeModal();editor.openSVGChartEditor(svg);focusStructureChange(change);}});
+    mountDOMChartPaints(body,editor,svg,{afterPaint:(_,color)=>{if(color===null&&model.kind==='waterfall')updateSVGBarChart(svg,model);},items:()=>model.bars.map(b=>({name:model.categories[b.row]+" · "+model.series[b.column],node:svg.querySelector(`[data-studio-svg-key="${b.key}"]`)})),flush,preview});
     preview();
     if(chosen){const input=body.querySelector(`[data-svg-bar="${chosen.key}"]`);input?.focus();input?.select();}
     return true;

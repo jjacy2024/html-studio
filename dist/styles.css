@@ -1111,12 +1111,65 @@ dialog[data-kind="agent"] .dialog-heading, dialog[data-kind="agent"] #dialog-act
   background: #8d6dd2;
   border-radius: 50%;
 }
-.previewing .floating-tools {
+/* Preview uses the browser viewport, independent of design zoom and offsets.
+   Keep the live iframe in place: reparenting would reload its browsing context. */
+#app.previewing {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: white;
+}
+.previewing :is(.topbar, .left-panel, .right-panel, .canvas-toolbar,
+  .canvas-footer, .floating-tools, .artboard-label) {
   display: none;
 }
-.previewing #inspector {
-  opacity: 0.5;
-  pointer-events: none;
+#app.previewing .workspace {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  height: 100%;
+}
+.previewing #canvas-scroll {
+  padding: 0;
+  overflow: hidden;
+  background: white;
+}
+.previewing :is(#surface-shell, #surface, #artboard) {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0;
+  min-height: 0;
+  transform: none !important;
+  box-shadow: none;
+}
+.previewing #preview-banner {
+  top: 14px;
+  right: 14px;
+  bottom: auto;
+  left: auto;
+  max-width: calc(100% - 28px);
+  transform: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 6px;
+  background: #fffffff0;
+  opacity: 0.24;
+  transition: opacity 180ms;
+}
+.previewing #preview-banner:is(:hover, :focus-within),
+.previewing:not([data-preview-state="ready"]) #preview-banner {
+  opacity: 1;
+}
+.previewing #preview-banner button { min-height: 32px; font-size: 12px; }
+.previewing #preview-status { white-space: normal; }
+.previewing[data-preview-state="ready"] :is(#preview-status, #preview-banner .pulse-dot) {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .previewing #preview-banner { transition: none; }
 }
 dialog {
   border: 1px solid #eee6f7;
@@ -1528,3 +1581,5 @@ dialog[data-kind="table-totals"] td { padding:9px; }
 /* Personal noncommercial use notice, kept outside user documents. */
 .usage-license-text { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.8; margin: 0; }
 #usage-license-button { display: block; margin: 10px auto 0; font-size: 12px; color: var(--muted, #777); }
+
+.chart-paints{margin:18px 0 0;border-top:1px solid var(--line);padding-top:12px}.chart-paints summary{cursor:pointer;font-weight:600}.chart-paint-list{display:grid;gap:8px;max-height:240px;overflow:auto}.chart-paint-row{display:grid;grid-template-columns:minmax(100px,1fr) 36px 90px 80px;gap:8px;align-items:center}.chart-paint-row span{overflow-wrap:anywhere}.chart-paint-row input{min-width:0;width:100%;height:30px;border:1px solid var(--line);border-radius:5px;padding:3px}.chart-paint-status{font-size:12px;color:var(--muted)}

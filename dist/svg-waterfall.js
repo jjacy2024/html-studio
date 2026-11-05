@@ -154,12 +154,12 @@ export function createSVGWaterfallAdapter(api) {
       for(const [t,node,attr] of [[b.titleTemplate,rect.querySelector('title'),null],[b.ariaTemplate,rect,'aria-label']])if(t&&node){const text=valueText(b.value,t,b.role==='change'&&m.showPositiveSign);attr?node.setAttribute(attr,text):node.textContent=text;}
       if(b.dataValue)rect.setAttribute('data-value',String(b.value));
       const sign=Math.sign(b.value),swapped=b.role==='change'&&sign!==0&&sign!==b.originalSign;
-      if(b.role==='change'&&sign!==0&&sign!==b.paintSign&&m.palette){
+      if(b.role==='change'&&sign!==0&&sign!==b.paintSign&&m.palette&&!rect.hasAttribute('data-studio-original-paint')){
         const owned=b.paintOverride!==null&&rect.style.getPropertyValue('fill')===b.paintOverride&&rect.style.getPropertyPriority('fill')==='important';
         if(sign===b.originalSign&&owned){if(b.originalFill.value)rect.style.setProperty('fill',b.originalFill.value,b.originalFill.priority);else rect.style.removeProperty('fill');b.paintOverride=null;}
         else {if(!owned)b.originalFill={value:rect.style.getPropertyValue('fill'),priority:rect.style.getPropertyPriority('fill')};rect.style.setProperty('fill',m.palette[sign>0?'positive':'negative'],'important');b.paintOverride=rect.style.getPropertyValue('fill');}
       }
-      if(b.role==='change'&&sign!==0)b.paintSign=sign;
+      if(b.role==='change'&&sign!==0&&!rect.hasAttribute('data-studio-original-paint'))b.paintSign=sign;
       if(swapped&&!m.palette)uncertainColor=true;
     }
     for(const c of m.connectors){const line=mark(svg,c.key,'line'),p=position(cumulative[c.row]);setNumber(line,vertical?'y1':'x1',p);setNumber(line,vertical?'y2':'x2',p);}

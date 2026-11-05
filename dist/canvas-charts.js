@@ -1,3 +1,4 @@
+import {mountChartPaints,validChartColor} from './chart-paints.js';
 import {focusStructureChange,mountChartStructure} from './chart-structure.js';
 import {bindDataPaste,pasteNumber} from './data-paste.js';
 import {cleanDocument,escapeHTML} from './document.js';
@@ -6,7 +7,7 @@ import {cleanDocument,escapeHTML} from './document.js';
 // the original Chart.js renderer; it never serializes or replaces its options.
 export function chartJSDataRuntime(probe={}) {
   const attr='data-studio-chartjs';
-  const valid=m=>m?.version===1&&Array.isArray(m.labels)&&m.labels.length>0&&m.labels.length<=200&&m.labels.every(s=>typeof s==='string'&&s.length<=300)&&Array.isArray(m.series)&&m.series.length>0&&m.series.length<=12&&m.series.every(s=>typeof s==='string'&&s.length<=300)&&Array.isArray(m.values)&&m.values.length===m.series.length&&m.values.every(v=>Array.isArray(v)&&v.length===m.labels.length&&v.every(n=>Number.isFinite(n)&&Math.abs(n)<=1e12));
+  const valid=m=>m?.version===1&&Array.isArray(m.labels)&&m.labels.length>0&&m.labels.length<=200&&m.labels.every(s=>typeof s==='string'&&s.length<=300)&&Array.isArray(m.series)&&m.series.length>0&&m.series.length<=12&&m.series.every(s=>typeof s==='string'&&s.length<=300)&&Array.isArray(m.values)&&m.values.length===m.series.length&&m.values.every(v=>Array.isArray(v)&&v.length===m.labels.length&&v.every(n=>Number.isFinite(n)&&Math.abs(n)<=1e12))&&(!m.colors||Array.isArray(m.colors)&&m.colors.length===m.series.length&&m.colors.every(a=>Array.isArray(a)&&a.length===m.labels.length&&a.every(c=>c===null||typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c))));
   const types=['bar','line','radar','pie','doughnut','polarArea'],roundTypes=['pie','doughnut','polarArea'];
   const sources=new WeakMap();
   const info=chart=>{
@@ -18,6 +19,8 @@ export function chartJSDataRuntime(probe={}) {
     if(!valid(m))throw Error('图表需要分类与数值数组；对象坐标或浮动区间暂不能安全绑定。');
     let bound;try{bound=JSON.parse(chart.canvas.getAttribute(attr));}catch{}
     m.type=chart.config.type;m.rowSources=bound?.rowSources||labels.map((_,i)=>i);m.seriesSources=bound?.seriesSources||ds.map((_,i)=>i);
+    if(bound?.colors)m.colors=bound.colors;
+    m.paintDefaults=ds.map((d,c)=>labels.map((_,r)=>{const p=chart.getDatasetMeta(c)?.data[r]?.options;return typeof p?.backgroundColor==='string'?p.backgroundColor:'#7951df';}));
     return m;
   };
   const bounds=new WeakMap();
@@ -31,7 +34,20 @@ export function chartJSDataRuntime(probe={}) {
       if(rowSources.length!==m.labels.length||seriesSources.length!==m.series.length||rowSources.some(i=>!Number.isInteger(i)||i<0||i>=source.labels.length)||seriesSources.some(i=>!Number.isInteger(i)||i<0||i>=source.datasets.length))return;
       const indexed=new Set(['backgroundColor','borderColor','borderWidth','borderRadius','hoverBackgroundColor','hoverBorderColor','hoverBorderWidth','pointBackgroundColor','pointBorderColor','pointBorderWidth','pointRadius','pointHoverRadius','pointHoverBackgroundColor','pointHoverBorderColor','pointStyle','offset','hoverOffset']);
       chart.data.labels=m.labels.slice();
-      chart.data.datasets=m.series.map((label,i)=>{const d={...source.datasets[seriesSources[i]],label,data:m.values[i].slice()};for(const key of indexed)if(Array.isArray(d[key])&&d[key].length)d[key]=rowSources.map(r=>d[key][r%d[key].length]);return d;});
+      chart.data.datasets=m.series.map((label,i)=>{
+        const d={...source.datasets[seriesSources[i]],label,data:m.values[i].slice()};
+        for(const key of indexed)if(Array.isArray(d[key])&&d[key].length)d[key]=rowSources.map(r=>d[key][r%d[key].length]);
+        const colors=m.colors?.[i],colorAt=r=>typeof colors?.[r]==='string'&&/^#[0-9a-f]{6}$/i.test(colors[r])?colors[r]:null;
+        if(Array.isArray(colors)){
+          const resolve=(v,ctx)=>typeof v==='function'?v(ctx):Array.isArray(v)?v[ctx.dataIndex%v.length]:v;
+          for(const key of ['backgroundColor','pointBackgroundColor','hoverBackgroundColor','pointHoverBackgroundColor']){const original=d[key]??d.backgroundColor;d[key]=ctx=>colorAt(ctx.dataIndex)||resolve(original,ctx);}
+          if(chart.config.type==='line'||chart.config.type==='radar'){
+            const segment=d.segment||{},original=segment.borderColor??d.borderColor;
+            d.segment={...segment,borderColor:ctx=>colorAt(ctx.p1DataIndex)||(typeof original==='function'?original(ctx):original)};
+          }
+        }
+        return d;
+      });
       const axis=chart.config.options.indexAxis==='y'?'x':'y',scale=chart.config.options.scales?.[axis];
       if(scale){if(!bounds.has(chart))bounds.set(chart,{min:scale.min,max:scale.max});const original=bounds.get(chart);let values=m.values.flat();if(scale.stacked)values=values.concat(m.labels.map((_,r)=>m.values.reduce((n,c)=>n+Math.max(0,c[r]),0)),m.labels.map((_,r)=>m.values.reduce((n,c)=>n+Math.min(0,c[r]),0)));for(const key of ['min','max']){const bound=original[key],outside=key==='min'?Math.min(...values)<bound:Math.max(...values)>bound;if(typeof bound==='number'){if(outside)delete scale[key];else scale[key]=bound;}}}
     }catch{}
@@ -74,15 +90,15 @@ function chartJSRuntimeScript(doc,probe) {
   script.textContent=`(${chartJSDataRuntime.toString()})(${JSON.stringify(probe||{})});`;return script;
 }
 export function validCanvasModel(m) {
-  return m?.version===1&&Array.isArray(m.labels)&&m.labels.length>0&&m.labels.length<=200&&m.labels.every(s=>typeof s==='string'&&s.length<=300)&&Array.isArray(m.series)&&m.series.length>0&&m.series.length<=12&&m.series.every(s=>typeof s==='string'&&s.length<=300)&&Array.isArray(m.values)&&m.values.length===m.series.length&&m.values.every(v=>Array.isArray(v)&&v.length===m.labels.length&&v.every(n=>Number.isFinite(n)&&Math.abs(n)<=1e12));
+  return m?.version===1&&Array.isArray(m.labels)&&m.labels.length>0&&m.labels.length<=200&&m.labels.every(s=>typeof s==='string'&&s.length<=300)&&Array.isArray(m.series)&&m.series.length>0&&m.series.length<=12&&m.series.every(s=>typeof s==='string'&&s.length<=300)&&Array.isArray(m.values)&&m.values.length===m.series.length&&m.values.every(v=>Array.isArray(v)&&v.length===m.labels.length&&v.every(n=>Number.isFinite(n)&&Math.abs(n)<=1e12))&&(!m.colors||Array.isArray(m.colors)&&m.colors.length===m.series.length&&m.colors.every(a=>Array.isArray(a)&&a.length===m.labels.length&&a.every(c=>c===null||typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c))));
 }
 function validCanvasResult(r) {return validCanvasModel(r?.model)&&typeof r.image==='string'&&r.image.length<8000000&&/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(r.image)&&Number.isFinite(r.width)&&r.width>0&&r.width<=16000&&Number.isFinite(r.height)&&r.height>0&&r.height<=16000;}
 export function probeChartJS(editor,canvas) {
   const token=crypto.randomUUID(),copy=new DOMParser().parseFromString(cleanDocument(editor.doc,{exporting:true}),'text/html'),index=[...editor.doc.querySelectorAll('canvas')].indexOf(canvas),target=copy.querySelectorAll('canvas')[index];
   if(!target)throw Error('Canvas 已被移除。');target.setAttribute('data-studio-chart-probe',token);
   const pageIndex=Math.max(0,editor.pages?.pages.findIndex(p=>p.contains(canvas))??0);chartJSRuntimeScript(copy,{token,pageIndex});
-  const frame=document.createElement('iframe');frame.setAttribute('sandbox','allow-scripts');frame.setAttribute('aria-hidden','true');frame.tabIndex=-1;frame.dataset.chartProbe=token;Object.assign(frame.style,{position:'fixed',left:'-30000px',top:'0',width:Math.min(editor.width,4000)+'px',height:Math.min(editor.height,4000)+'px',border:'0',pointerEvents:'none'});document.body.append(frame);
-  let resolveReady,rejectReady,cancel,done=false,sequence=0;const requests=new Map();
+  const frame=document.createElement('iframe');frame.setAttribute('sandbox','allow-scripts');frame.setAttribute('aria-hidden','true');frame.tabIndex=-1;frame.dataset.chartProbe=token;Object.assign(frame.style,{position:'fixed',left:'0',top:'0',opacity:'0',zIndex:'-1',width:Math.min(editor.width,4000)+'px',height:Math.min(editor.height,4000)+'px',border:'0',pointerEvents:'none'});document.body.append(frame);
+  let resolveReady,rejectReady,cancel,done=false,sequence=0,frameReady=0,frameTimer=0;const requests=new Map();
   const ready=new Promise((resolve,reject)=>{resolveReady=resolve;rejectReady=reject;});
   const timer=setTimeout(()=>{rejectReady(Error('图表读取超时，请检查脚本和资源是否完整。'));close();},14000);
   const listener=event=>{
@@ -91,10 +107,12 @@ export function probeChartJS(editor,canvas) {
     if(Number.isInteger(id)){const pending=requests.get(id);if(!pending)return;requests.delete(id);clearTimeout(pending.timer);error?pending.reject(Error(String(error).slice(0,500))):validCanvasResult(result)?pending.resolve(result):pending.reject(Error('图表返回的数据无效。'));return;}
     clearTimeout(timer);if(error)rejectReady(Error(String(error).slice(0,500)));else if(validCanvasResult(result))resolveReady(result);else rejectReady(Error('无法读取图表数据。'));
   };
-  function close(){if(done)return;done=true;clearTimeout(timer);window.removeEventListener('message',listener);cancel?.();frame.remove();rejectReady(Error('图表面板已关闭'));for(const pending of requests.values()){clearTimeout(pending.timer);pending.reject(Error('图表面板已关闭'));}requests.clear();}
+  function close(){if(done)return;done=true;clearTimeout(timer);cancelAnimationFrame(frameReady);clearTimeout(frameTimer);window.removeEventListener('message',listener);cancel?.();frame.remove();rejectReady(Error('图表面板已关闭'));for(const pending of requests.values()){clearTimeout(pending.timer);pending.reject(Error('图表面板已关闭'));}requests.clear();}
   // This offscreen measurement session needs the existing transfer lifecycle;
   // ordinary user-facing previews can use native page navigation independently.
-  window.addEventListener('message',listener);cancel=editor.assets.preview(frame,'<!doctype html>\n'+copy.documentElement.outerHTML,{loader:'transfer'});
+  window.addEventListener('message',listener);
+  let mounted=false;const mount=()=>{if(done||mounted)return;mounted=true;cancelAnimationFrame(frameReady);clearTimeout(frameTimer);frame.getBoundingClientRect();cancel=editor.assets.preview(frame,'<!doctype html>\n'+copy.documentElement.outerHTML,{loader:'transfer'});};
+  frameReady=requestAnimationFrame(()=>frameReady=requestAnimationFrame(mount));frameTimer=setTimeout(mount,250);
   return {ready,close,update:model=>new Promise((resolve,reject)=>{if(done||!validCanvasModel(model))return reject(Error('图表会话或数据无效'));const id=++sequence,timer=setTimeout(()=>{requests.delete(id);reject(Error('图表更新超时，保留上一次有效结果。'));},5000);requests.set(id,{resolve,reject,timer});frame.contentWindow.postMessage({token,id,model},'*');})};
 }
 export async function paintCanvasPreview(canvas) {
@@ -143,6 +161,10 @@ export function changeCanvasChartStructure(model,{axis,operation,index,name}) {
   if(operation==='rename')names[index]=name;
   else if(operation==='add'){names.splice(index+1,0,name);refs.splice(index+1,0,refs[index]);if(axis==='row')next.values.forEach(a=>a.splice(index+1,0,0));else next.values.splice(index+1,0,next.labels.map(()=>0));}
   else{names.splice(index,1);refs.splice(index,1);if(axis==='row')next.values.forEach(a=>a.splice(index,1));else next.values.splice(index,1);}
+  if(next.colors&&operation!=='rename'){
+    if(axis==='row')next.colors.forEach(a=>a.splice(index+(operation==='add'?1:0),operation==='delete'?1:0,...(operation==='add'?[a[index]??null]:[])));
+    else next.colors.splice(index+(operation==='add'?1:0),operation==='delete'?1:0,...(operation==='add'?[next.colors[index].slice()]:[]));
+  }
   return next;
 }
 export function installCanvasCharts(Editor,{modal,closeModal}) {
@@ -192,13 +214,20 @@ export function installCanvasCharts(Editor,{modal,closeModal}) {
             await pasteJob?.catch(()=>{});await process();if(!valid())return;flush();
             const next=changeCanvasChartStructure(applied,{axis,operation,index,name});
             grid.inert=true;
-            try{const result=await session.update(next);if(!valid())return;if(!await storeCanvasResult(editor,canvas,result,valid))return;desired=structuredClone(result.model);applied=structuredClone(result.model);image.src=result.image;image.style.background=result.background;editor.commit('调整 Chart.js 图表行列');drawStructure();focusStructureChange({axis,operation,index,name});}
+            try{const result=await session.update(next);if(!valid())return;if(!await storeCanvasResult(editor,canvas,result,valid))return;desired=structuredClone(result.model);applied=structuredClone(result.model);image.src=result.image;image.style.background=result.background;editor.commit('调整 Chart.js 图表行列');drawStructure();mountPaints();focusStructureChange({axis,operation,index,name});}
             finally{grid.inert=false;}
             })();
             try{await structureJob;}finally{structureJob=null;}
           }});
         };
-        drawStructure();
+        const mountPaints=()=>mountChartPaints(body,{valid:()=>valid()&&!structureJob&&!pasteJob,items:()=>desired.series.flatMap((name,c)=>desired.labels.map((label,r)=>({name:label+' · '+name,c,r,color:desired.colors?.[c]?.[r]||desired.paintDefaults?.[c]?.[r]}))),change:async(item,color)=>{
+          if(!valid()||structureJob||pasteJob)return;
+          const grid=body.querySelector('#canvas-chart-grid');grid.inert=true;
+          structureJob=(async()=>{await process();flush();if(!valid())return;const next=structuredClone(applied);next.colors ||= next.series.map(()=>next.labels.map(()=>null));next.colors[item.c][item.r]=color;
+            const result=await session.update(next);if(!valid()||!await storeCanvasResult(editor,canvas,result,valid))return;desired=structuredClone(result.model);applied=structuredClone(result.model);image.src=result.image;editor.commit(color===null?'恢复图表元素原色':'修改图表元素颜色');editor.draw();})();
+          try{await structureJob;}finally{structureJob=null;grid.inert=false;}
+        }});
+        drawStructure();mountPaints();
         const closeAfter=async()=>{await structureJob?.catch(()=>{});await pasteJob?.catch(()=>{});await process();flush();if(valid())closeModal();};
         body.querySelector('#canvas-chart-grid').addEventListener('input',event=>{const input=event.target;if(!input.matches('[data-canvas-row]')||!valid()||pasteJob||structureJob)return;const raw=input.value.trim().replaceAll(',',''),value=Number(raw);if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw)||!Number.isFinite(value)||Math.abs(value)>1e12){input.setAttribute('aria-invalid','true');body.querySelector('#canvas-chart-status').textContent='请输入 -1 万亿至 1 万亿之间的有效数值。';return;}input.removeAttribute('aria-invalid');desired.values[Number(input.dataset.canvasColumn)][Number(input.dataset.canvasRow)]=value;dirty=true;body.querySelector('#canvas-chart-status').textContent='正在更新…';clearTimeout(timer);timer=setTimeout(process,80);});
         body.querySelector('#canvas-chart-grid').addEventListener('change',async()=>{await process();flush();});

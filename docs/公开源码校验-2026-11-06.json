@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-06",
+  "artifact": "HTML Studio.html",
+  "bytes": 10023941,
+  "sha256": "950510ef28a9572368691d584f0cd4c301b537b4ffdd27d0d0f2e4f99de413e3",
+  "syntaxCheck": true,
+  "standaloneRebuildMatchesLocal": true,
+  "publicSnapshotTests": [
+    {
+      "suite": "edit-animation-visibility",
+      "checks": 15,
+      "date": "2026-11-05T17:15:51.740Z",
+      "browser": "156.0.8078.80"
+    },
+    {
+      "suite": "preview-fullscreen",
+      "checks": 8,
+      "date": "2026-11-05T17:16:06.093Z",
+      "browser": "156.0.8078.80"
+    }
+  ],
+  "historicalChartChecks": 376,
+  "historicalChartArtifactSHA256": "c4865c5f08c3429810ea2a21324d6381497e4e45472d750c27add47f1bb849df",
+  "archiveUpdated": false
+}

@@ -1,3 +1,4 @@
+import {mountDOMChartPaints} from './chart-paints.js';
 import {focusStructureChange,mountChartStructure,structureTransaction,structureClone,structureText,updateKnownChartMotion} from './chart-structure.js';
 import {bindDataPaste,pasteNumber} from './data-paste.js';
 import {escapeHTML} from './document.js';
@@ -150,13 +151,13 @@ export function changeHTMLBarStructure(editor,root,model,{operation,index,name})
     updateHTMLBars(root,m);updateKnownChartMotion(editor.doc);return m;
   });
 }
-function htmlBarPreviewHTML(root) {
+export function htmlBarPreviewHTML(root) {
   const clone=root.cloneNode(true),nodes=[root,...root.querySelectorAll('*')],copies=[clone,...clone.querySelectorAll('*')];
-  const properties=['display','position','box-sizing','width','height','min-width','min-height','max-width','max-height','left','right','top','bottom','margin','padding','gap','row-gap','column-gap','flex-direction','flex-grow','flex-shrink','flex-basis','align-items','align-self','justify-content','grid-template-columns','grid-template-rows','background','border','border-radius','box-shadow','color','font-family','font-size','font-weight','font-style','line-height','letter-spacing','text-align','white-space','overflow','opacity','transform','transform-origin'];
-  copies.forEach((n,i)=>{const s=nodes[i].ownerDocument.defaultView.getComputedStyle(nodes[i]);for(const p of properties)n.style.setProperty(p,s.getPropertyValue(p));for(const a of [...n.attributes])if(/^on/i.test(a.name))n.removeAttribute(a.name);});
+  const properties=['display','position','box-sizing','width','height','min-width','min-height','max-width','max-height','left','right','top','bottom','margin','padding','gap','row-gap','column-gap','flex-direction','flex-grow','flex-shrink','flex-basis','align-items','align-self','justify-content','grid-template-columns','grid-template-rows','background','border','border-radius','box-shadow','color','font-family','font-size','font-weight','font-style','line-height','letter-spacing','text-align','white-space','overflow','opacity','transform','transform-origin','fill','fill-opacity','stroke','stroke-width','stroke-opacity','stroke-dasharray','stroke-dashoffset','stroke-linecap','stroke-linejoin','clip-path'];
+  copies.forEach((n,i)=>{const s=nodes[i].ownerDocument.defaultView.getComputedStyle(nodes[i]);for(const p of properties)n.style.setProperty(p,s.getPropertyValue(p).replace(/url\(["']?[^#)]*#([^"')]+)["']?\)/g,'url(#$1)'));for(const a of [...n.attributes])if(/^on/i.test(a.name))n.removeAttribute(a.name);});
   clone.querySelectorAll('script,iframe,object,embed').forEach(n=>n.remove());Object.assign(clone.style,{position:'relative',left:'0',top:'0',right:'auto',bottom:'auto',margin:'0',transform:'none'});
   const fonts=[...root.ownerDocument.querySelectorAll('style')].map(s=>s.textContent).filter(s=>s.includes('@font-face')).join('\n');
-  return {html:`<!doctype html><html><head><style>${fonts.replace(/<\/style/gi,'<\\/style')}html,body{margin:0;padding:0;overflow:hidden}</style></head><body>${clone.outerHTML}</body></html>`,width:Math.max(1,root.offsetWidth),height:Math.max(1,root.offsetHeight)};
+  return {html:`<!doctype html><html><head><style>${fonts.replace(/<\/style/gi,'<\\/style')}html,body{margin:0;padding:0;overflow:hidden}</style></head><body>${clone.outerHTML}</body></html>`,width:Math.max(1,root.offsetWidth||root.getBoundingClientRect().width),height:Math.max(1,root.offsetHeight||root.getBoundingClientRect().height)};
 }
 export function installHTMLBars(Editor,{modal,closeModal}) {
   const q=s=>document.querySelector(s);
@@ -191,6 +192,7 @@ export function installHTMLBars(Editor,{modal,closeModal}) {
     body.querySelector('#html-bar-grid').addEventListener('input',event=>{const input=event.target;if(!input.matches('[data-html-bar]')||!valid())return;const value=htmlBarNumber(input.value)?.value;if(value===undefined||value<0||value>1e12){input.setAttribute('aria-invalid','true');q('#html-bar-status').textContent='请输入 0 至 1 万亿的数值；保留上一次有效结果。';return;}try{const next=structuredClone(model);next.bars[Number(input.dataset.htmlBar)].value=value;updateHTMLBars(root,next);model=next;pending=true;input.removeAttribute('aria-invalid');editor.draw();q('#html-bar-status').textContent='已更新';clearTimeout(previewTimer);previewTimer=setTimeout(drawPreview,80);}catch(e){input.setAttribute('aria-invalid','true');q('#html-bar-status').textContent=e.message;}});
     body.querySelector('#html-bar-grid').addEventListener('change',flush);
     mountChartStructure(body,{rows:model.bars.map(b=>b.category),rowLabel:model.kind==='share'?'分段':'分类',maxRows:model.kind==='share'?20:100,columnHint:model.kind==='share'?'占比条按每个分段的数值计算百分比，可新增分段；数值列为固定维度。':'此类 HTML/CSS 图为单系列，可增删分类；多系列布局暂不自动扩展。',valid,change:change=>{if(!valid())return;flush();model=changeHTMLBarStructure(editor,root,model,change);editor.commit('调整 HTML 图表分类');closeModal();editor.openHTMLBarEditor(root);focusStructureChange(change);}});
+    mountDOMChartPaints(body,editor,root,{items:()=>model.bars.map(b=>({name:b.category,node:root.querySelector(`[data-studio-html-key="${b.key}"]`)})),flush,preview:drawPreview});
     const resize=new ResizeObserver(drawPreview);resize.observe(body.querySelector('.data-live-preview'));
     q('#dialog').addEventListener('close',()=>{flush();clearTimeout(previewTimer);cancelPreview?.();resize.disconnect();if(q('#dialog').flushData===flush)delete q('#dialog').flushData;},{once:true});drawPreview();
     const key=clicked?.closest(`[${HTML_BAR_KEY}]`)?.getAttribute(HTML_BAR_KEY),index=model.bars.findIndex(b=>b.key===key||b.labelKey===key);if(index>=0){const input=body.querySelector(`[data-html-bar="${index}"]`);input.focus();input.select();}return true;
